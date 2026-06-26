@@ -28,9 +28,12 @@ instance Proposition () where
 -- Implication
 newtype Impl a b = Impl (a -> b)
 
+-- problem: stopping the creation of the function
+-- how to check if b is provable without introducing x?
+-- solutions: try Proxy or introduce a Var type to create concrete but shadow variables
 instance (Proposition a, Proposition b) => Proposition (Impl a b) where
     -- prove b while assuming a
-    prove context = Impl $ \x -> (prove :: [Assumption] -> b) (Assumption x : context)
+    prove context = Impl $ \x -> prove (Assumption x : context) :: b
 
 -- Int
 -- testing the pattern matching solutions
