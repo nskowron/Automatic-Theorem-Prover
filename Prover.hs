@@ -5,6 +5,9 @@ module Prover where
 
 import Data.Typeable
 
+-- TODO:
+-- try Proxy
+-- add string context to proofs
 
 -- Assumption
 -- used to store assumed propositions heterogenously in context
@@ -26,12 +29,14 @@ instance Proposition () where
 newtype Impl a b = Impl (a -> b)
 
 instance (Proposition a, Proposition b) => Proposition (Impl a b) where
+    -- prove b while assuming a
     prove context = Impl $ \x -> (prove :: [Assumption] -> b) (Assumption x : context)
 
 -- Int
 -- testing the pattern matching solutions
 -- may be used later for FOL
 instance Proposition Int where
+    -- prove only when it's assumed
     prove (Assumption c : cs) = case cast c of
         Just x  -> x :: Int
         Nothing -> prove cs
