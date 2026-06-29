@@ -1,6 +1,5 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
@@ -22,6 +21,8 @@ type True = ()
 type False = Void
 type Impl a b = a -> b
 type And a b = (a, b)
+type Or a b = Either a b
+type Not a = a -> False
 newtype PS a = PS a -- Propositional Symbol
 
 
@@ -60,6 +61,11 @@ instance Searchable (HList (a ': c) -> b) => Searchable (HList c -> Impl a b) wh
 -- And (a, b) - provable if both a and b provable
 instance (Searchable (HList c -> a), Searchable (HList c -> b)) => Searchable (HList c -> And a b) where
     search = liftA2 (\p1 p2 -> \ctxt -> (p1 ctxt, p2 ctxt)) (search @(HList c -> a)) (search @(HList c -> b))
+
+instance (Searchable (HList c -> a), Searchable (HList c -> b)) => Searchable (HList c -> Or a b) where
+    search = case (search @(HList c -> a)) of
+        Nothing -> fmap (\proof -> \ctxt -> Right (proof ctxt)) (search @(HList c -> b))
+        proof -> fmap (\proof -> \ctxt -> Left (proof ctxt)) proof
 
 -- PS a - provable if found in context
 instance (Iterable (IterNext (HList c -> PS a)), (SearchedType (IterNext (HList c -> PS a)) ~ (HList c -> PS a))) 
