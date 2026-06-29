@@ -1,51 +1,63 @@
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
-module Prover where
+module HList where
 
-import Data.Typeable
+import Data.Kind
+import Data.Void
+import Data.Type.Equality (type (==))
 
--- TODO:
--- try Proxy
--- add string context to proofs
-
--- Assumption
--- used to store assumed propositions heterogenously in context
--- problem: retrieving the types later and pattern matching
--- solutions: casting or try Proxy
-data Assumption where
-    Assumption :: (Proposition a) => a -> Assumption
-
--- Proposition
--- only types that are an instance of this class can be proven
-class (Typeable a) => Proposition a where
-    prove :: [Assumption] -> a
-
--- True
-instance Proposition () where
-    prove _ = ()
-
--- Implication
-newtype Impl a b = Impl (a -> b)
-
--- problem: stopping the creation of the function
--- how to check if b is provable without introducing x?
--- solutions: try Proxy or introduce a Var type to create concrete but shadow variables
-instance (Proposition a, Proposition b) => Proposition (Impl a b) where
-    -- prove b while assuming a
-    prove context = Impl $ \x -> prove (Assumption x : context) :: b
-
--- Int
--- testing the pattern matching solutions
--- may be used later for FOL
-instance Proposition Int where
-    -- prove only when it's assumed
-    prove (Assumption c : cs) = case cast c of
-        Just x  -> x :: Int
-        Nothing -> prove cs
-    prove [] = error "Not found"
+data HList (l :: [Type]) where
+    HNil  :: HList '[]
+    HCons :: e -> HList l -> HList (e ': l)
 
 
--- helper
-eval :: Impl a b -> a -> b
-eval (Impl f) x = f x
+type Impl a b = a -> b
+type And a b = (a, b)
+newtype PS a = PS a
+
+
+class Searchable a where
+    search :: Maybe a
+
+
+class Provable a where
+    prove :: Maybe a
+
+instance (Searchable (HList '[] -> a)) => Provable a where
+    prove = fmap ($ HNil) (search :: Maybe (HList '[] -> a))
+
+
+instance Searchable (HList c -> ()) where
+    search = Just $ const ()
+
+instance Searchable (HList c -> Void) where
+    search = Nothing
+
+instance Searchable (HList (a ': c) -> b) => Searchable (HList c -> Impl a b) where
+    search = fmap (\proof -> \ctxt -> \x -> proof (HCons x ctxt)) (search :: Maybe (HList (a ': c) -> b))
+
+instance (Searchable (HList c -> a), Searchable (HList c -> b)) => Searchable (HList c -> And a b) where
+    search = liftA2 (\p1 p2 -> \ctxt -> (p1 ctxt, p2 ctxt)) (search :: Maybe (HList c -> a)) (search :: Maybe (HList c -> b))
+
+instance Iterable (HList c -> PS a) => Searchable (HList c -> PS a) where -- consider adding a Set layer
+    search = iter :: Maybe (HList c -> PS a)
+
+
+
+class Iterable a where
+    iter :: Maybe a
+
+instance Iterable (HList '[] -> s) where
+    iter = Nothing
+
+instance Iterable (HList (s ': ts) -> s) where
+    iter = Just $ \(HCons c _) -> c
+
+instance Iterable (HList ts -> s) => Iterable (HList (t ': ts) -> s) where
+    iter = fmap (\found -> \(HCons c cs) -> found cs) (iter :: Maybe (HList ts -> s))
