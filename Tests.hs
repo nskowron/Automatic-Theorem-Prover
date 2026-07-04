@@ -1,8 +1,11 @@
 module Tests where
 
+
+import Proposition
 import Prover
 
 import Test.HUnit.Base
+
 
 data A
 data B

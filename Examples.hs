@@ -1,5 +1,7 @@
 module Examples where
 
+
+import Proposition
 import Prover
 
 -- some propositional symbols for easy handling (TODO)
