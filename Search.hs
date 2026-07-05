@@ -10,78 +10,77 @@ module Search where
 import Proposition
 import Inference
 
-import Data.HList ( HList(..) )
+import Control.Monad ( join )
+import Control.Applicative ( (<|>) )
+import Data.HList ( HList(..), hHead, hTail )
+import Data.Kind ( Type )
 
--- Searchable - describes proof tree nodes
+
+-- Proof Tree Search Node
+-- Allows for iterating through context and
+-- applying the right inference rules based on instance
+type SearchNodes premises conclusion context = HList premises -> HList context -> conclusion
+type SearchNode premise conclusion context = premise -> HList context -> conclusion
+
 class Searchable a where
     search :: Maybe a
 
+instance {-# OVERLAPPABLE #-}
+    ( Searchable (SearchNode a b context)
+    , Searchable (SearchNodes as b context)
+    ) => Searchable (SearchNodes (a ': as) b context) where
+    search = (. hHead) <$> search @(SearchNode a b context)
+        <|> (. hTail) <$> search @(SearchNodes as b context)
 
--- instances of Searchable - determine the deduction rules
--- used to prove each type of proposition
--- for now just the basic deduction rules
--- TODO: add a method with all the deduction rules
--- and heuristics applicable for any proposition
+instance {-# OVERLAPPING #-} Searchable (SearchNodes '[] True context) where
+    search = pure . const . const $ ()
 
--- True - always provable
-instance Searchable (HList c -> True) where
-    search = Just $ const ()
-
--- False - never provable
-instance Searchable (HList c -> False) where
+instance {-# OVERLAPPING #-} Searchable (SearchNodes '[] False context) where
     search = Nothing
 
--- Implication a -> b - provable if b is provable while assuming a
-instance Searchable (HList (a ': c) -> b) => Searchable (HList c -> Impl a b) where
-    search = fmap (\proof -> \ctxt -> \x -> proof (HCons x ctxt)) (search @(HList (a ': c) -> b))
+instance {-# OVERLAPPING #-} Searchable (SearchNode a a context) where
+    search = pure proj
 
--- And (a, b) - provable if both a and b provable
-instance (Searchable (HList c -> a), Searchable (HList c -> b)) => Searchable (HList c -> And a b) where
-    search = liftA2 (\p1 p2 -> \ctxt -> (p1 ctxt, p2 ctxt)) (search @(HList c -> a)) (search @(HList c -> b))
+instance {-# OVERLAPPABLE #-} Searchable (SearchNode a b context) where
+    search = Nothing
 
-instance (Searchable (HList c -> a), Searchable (HList c -> b)) => Searchable (HList c -> Or a b) where
-    search = case (search @(HList c -> a)) of
-        Nothing -> fmap (\proof -> \ctxt -> Right (proof ctxt)) (search @(HList c -> b))
-        proof -> fmap (\proof -> \ctxt -> Left (proof ctxt)) proof
+instance {-# OVERLAPPABLE #-} Searchable (SearchNodes '[] (PS a) context) where
+    search = Nothing
 
--- PS a - provable if found in context
-instance (Iterable (IterNext (HList c -> PS a)), (SearchedType (IterNext (HList c -> PS a)) ~ (HList c -> PS a))) 
-    => Searchable (HList c -> PS a) where
-    search = iter @(IterNext (HList c -> PS a))
+instance Searchable (SearchNodes (a ': context) b (a ': context))
+    => Searchable (SearchNodes '[] (a `Impl` b) context) where
+    search = const . implIntr . join
+        <$> search @(SearchNodes (a ': context) b (a ': context))
 
+instance 
+    ( Searchable (SearchNodes context a context)
+    , Searchable (SearchNodes context b context)
+    ) => Searchable (SearchNodes '[] (a `And` b) context) where
+    search = (const .) . (. join) . conjIntr . join
+        <$> search @(SearchNodes context a context)
+        <*> search @(SearchNodes context b context)
 
--- Iterating over context type
--- its not clean yet, i dont like it, will try to reformat
+instance 
+    ( Searchable (SearchNodes context a context)
+    , Searchable (SearchNodes context b context)
+    ) => Searchable (SearchNodes '[] (a `Or` b) context) where
+    search = case search @(SearchNodes context a context) of
+        Just a -> pure . const . disjIntr . Left . join $ a
+        Nothing -> const . disjIntr . Right . join
+            <$> search @(SearchNodes context b context)
 
--- phantom types for Iterable instance deduction
-data Match a
-data NoMatch a
+instance Searchable (SearchNodes context a context)
+    => Searchable (SearchNode (a `Impl` b) b context) where
+    search = (. const) . flip implElim . join
+        <$> search @(SearchNodes context a context)
 
--- decides on the phantom type
-type family IterNext ts where
-    IterNext (HList (s ': ts) -> s) = Match (HList (s ': ts) -> s)
-    IterNext  ts = NoMatch ts
+instance Searchable (SearchNode (a `And` b) a context) where
+    search = pure $ conjElimLeft . const
 
+instance Searchable (SearchNode (a `And` b) b context) where
+    search = pure $ conjElimRight . const
 
--- Iterable - has a type to search for and maybe finds it
-class Iterable a where
-    type SearchedType a
-    iter :: Maybe (SearchedType a)
-
--- instances of Iterable - determine how to search the context
-
--- empty context - not found
-instance Iterable (NoMatch (HList '[] -> s)) where
-    type instance SearchedType (NoMatch (HList '[] -> s)) = HList '[] -> s
-    iter = Nothing
-
--- found searched type - return it
-instance Iterable (Match (HList (s ': ts) -> s)) where
-    type instance SearchedType (Match (HList (s ': ts) -> s)) = HList (s ': ts) -> s
-    iter = Just $ \(HCons c _) -> c
-
--- types dont match - iterate further
-instance (Iterable (IterNext (HList ts -> s)), (SearchedType (IterNext (HList ts -> s)) ~ (HList ts -> s))) 
-    => Iterable (NoMatch (HList (t ': ts) -> s)) where
-    type instance SearchedType (NoMatch (HList (t ': ts) -> s)) = HList (t ': ts) -> s
-    iter = fmap (\found -> \(HCons c cs) -> found cs) (iter @(IterNext (HList ts -> s)))
+instance Searchable (SearchNode (a `Or` b) c context) where
+    search = (\ac bc ab -> disjElim (const ab) (join ac) (join bc))
+        <$> search @(SearchNodes (a ': context) c (a ': context))
+        <*> search @(SearchNodes (b ': context) c (b ': context))

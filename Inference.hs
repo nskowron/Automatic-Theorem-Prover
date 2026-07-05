@@ -8,8 +8,10 @@ import Proposition
 import Data.HList ( HList(..) )
 
 
-proj :: HList (a ': context) -> a
-proj (HCons a _) = a
+proj 
+    :: a 
+    -> HList context -> a
+proj = const
 
 implIntr 
     :: (HList (a ': context) -> b) 

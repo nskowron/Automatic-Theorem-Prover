@@ -55,7 +55,7 @@ runTests = do
 
     -- commutativity
     assertBool "T21" $ proofExists    $ prove @((PS A `And` PS B) -> (PS B `And` PS A))
-    assertBool "T22" $ proofExists    $ prove @((PS A `Or` PS B) -> (PS B `Or` PS A))
+    assertBool "T22" $ proofExists    $ prove @((PS A `Or` PS B) -> (PS B `Or` PS A)) -- DEBUG
 
     -- associativity
     assertBool "T23" $ proofExists    $ prove @((PS A `And` (PS B `And` PS C)) -> ((PS A `And` PS B) `And` PS C))

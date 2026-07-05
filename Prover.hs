@@ -7,6 +7,7 @@ module Prover where
 import Proposition
 import Search
 
+import Control.Monad ( join )
 import Data.HList ( HList(..) )
 
 
@@ -16,8 +17,8 @@ class Provable a where
 
 -- each proof search tree node is (maybe) a function that
 -- takes in the context and returns proof of a proposition
-instance (Searchable (HList '[] -> a)) => Provable a where
-    prove = fmap (\proof -> proof HNil) (search @(HList '[] -> a))
+instance (Searchable (SearchNodes '[] a '[])) => Provable a where
+    prove = join <$> (search @(SearchNodes '[] a '[])) <*> pure HNil
 
 
 -- helper
