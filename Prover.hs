@@ -17,8 +17,8 @@ class Provable a where
 
 -- each proof search tree node is (maybe) a function that
 -- takes in the context and returns proof of a proposition
-instance (Searchable (SearchNodes '[] a '[])) => Provable a where
-    prove = join <$> (search @(SearchNodes '[] a '[])) <*> pure HNil
+instance (Searchable (SearchNodes '[] a '[] '[])) => Provable a where
+    prove = join <$> (search @(SearchNodes '[] a '[] No)) <*> pure HNil
 
 
 -- helper

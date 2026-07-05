@@ -18,3 +18,6 @@ instance Proposition True
 instance Proposition False
 instance (Proposition a, Proposition b) => Proposition (a `Impl` b)
 -- TODO: rest
+
+-- helper
+data Visited = Yes | No
