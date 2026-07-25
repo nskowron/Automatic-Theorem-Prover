@@ -10,15 +10,16 @@ import Search
 import Control.Monad ( join )
 import Data.HList ( HList(..) )
 
-
 -- Provable - describes provable propositions
 class Provable a where
     prove :: Maybe a
 
 -- each proof search tree node is (maybe) a function that
 -- takes in the context and returns proof of a proposition
-instance (Searchable (SearchNodes '[] a '[] '[])) => Provable a where
-    prove = join <$> (search @(SearchNodes '[] a '[] No)) <*> pure HNil
+instance 
+    ( Searchable a '[] '[] '[] '[]
+    ) => Provable a where
+    prove = search @a @'[] @'[] @'[] @'[] HNil <*> pure HNil
 
 
 -- helper
