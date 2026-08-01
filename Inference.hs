@@ -146,7 +146,7 @@ instance {-# OVERLAPPABLE #-}
 -- Elim --
 instance {-# OVERLAPPING #-}
     ( Traversable (a -> conclusion) context context
-    , Inferable a context -- think about it
+    , Inferable a context
     ) => Eliminable conclusion (a -> conclusion) context where
     elim = (\f a ctxt -> f ctxt $ a ctxt)
         <$> traverse @(a -> conclusion) @context @context
@@ -166,15 +166,15 @@ instance {-# OVERLAPPING #-}
 
 instance {-# OVERLAPPING #-}
     ( Traversable (a `Or` b) context context
-    , Matchable conclusion a (a ': context)
-    , Matchable conclusion b (b ': context)
+    , Inferable conclusion '[a]
+    , Inferable conclusion '[b]
     ) => Eliminable conclusion (a `Or` b) context where
     elim = (\ab ac bc ctxt -> case ab ctxt of
-            Left a -> ac $ HCons a ctxt
-            Right b -> bc $ HCons b ctxt)
+            Left a -> ac $ HCons a HNil
+            Right b -> bc $ HCons b HNil)
         <$> traverse @(a `Or` b) @context @context
-        <*> match @conclusion @a @(a ': context)
-        <*> match @conclusion @a @(b ': context)
+        <*> infer @conclusion @'[a]
+        <*> infer @conclusion @'[b]
 
 instance {-# OVERLAPPABLE #-}
     Eliminable conclusion premise context where
