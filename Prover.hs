@@ -17,9 +17,9 @@ class Provable a where
 -- each proof search tree node is (maybe) a function that
 -- takes in the context and returns proof of a proposition
 instance 
-    ( Searchable a (() ': '[]) '[] '[] '[]
+    ( Searchable a (() ': '[]) '[]
     ) => Provable a where
-    prove = search @a @(() ': '[]) @'[] @'[] @'[] <*> pure HNil
+    prove = search @a @(() ': '[]) @'[] <*> pure HNil
 
 
 -- helper

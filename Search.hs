@@ -14,17 +14,17 @@ import Data.HList ( HList(..), hHead, hTail )
 import Data.Kind ( Type )
 
 
-class Member a l where
-    member :: Bool
+-- class Member a l where
+--     member :: Bool
 
-instance Member a '[] where
-    member = False
+-- instance Member a '[] where
+--     member = False
 
-instance {-# OVERLAPPING #-} Member a (a ': ls) where
-    member = True 
+-- instance {-# OVERLAPPING #-} Member a (a ': ls) where
+--     member = True 
 
-instance {-# OVERLAPPABLE #-} (Member a ls) => Member a (l ': ls) where
-    member = member @a @ls
+-- instance {-# OVERLAPPABLE #-} (Member a ls) => Member a (l ': ls) where
+--     member = member @a @ls
 
 class Find a l where
     find :: Maybe (HList l -> a)
@@ -39,27 +39,24 @@ instance {-# OVERLAPPABLE #-} (Find a ls) => Find a (l ': ls) where
     find = (. hTail) <$> find @a @ls
 
 -- searches possible premises
-class Searchable (conclusion :: Type) (premises :: [Type]) (context :: [Type]) (tabu_concl :: [Type]) (tabu_prem :: [Type]) where
+class Searchable (conclusion :: Type) (premises :: [Type]) (context :: [Type]) where
     search :: Maybe (HList context -> conclusion)
 
 -- infers from concrete premises
-class Inferable (conclusion :: Type) (premises :: [Type]) (context :: [Type]) (tabu_concl :: [Type]) (tabu_prem :: [Type]) where
+class Inferable (conclusion :: Type) (premises :: [Type]) (context :: [Type]) where
     infer :: Maybe (HList context -> conclusion)
 
-instance Searchable conclusion '[] context tabu_concl tabu_prem where
+instance Searchable conclusion '[] context where
     search = Nothing
 
 instance {-# OVERLAPPING #-} 
     ( Find conclusion context
-    , Member conclusion tabu_concl
-    , Inferable conclusion '[] context tabu_concl tabu_prem
-    , Searchable conclusion context context tabu_concl tabu_prem
-    ) => Searchable conclusion (() ': context) context tabu_concl tabu_prem where
+    , Inferable conclusion '[] context
+    , Searchable conclusion context context
+    ) => Searchable conclusion (() ': context) context where
     search = find @conclusion @context
-        <|> if member @conclusion @tabu_concl
-            then Nothing
-            else infer @conclusion @'[] @context @tabu_concl @tabu_prem
-                <|> search @conclusion @context @context @tabu_concl @tabu_prem
+        <|> infer @conclusion @'[] @context
+        <|> search @conclusion @context @context
 
 -- TODO: consider moving the ifs into another method and using MINIMAL
 -- TODO: remember to add to tabu premises
@@ -68,116 +65,107 @@ instance {-# OVERLAPPING #-}
 -- TODO: remove the list for infer premises
 -- TODO: fix tabu on type level
 instance {-# OVERLAPPING #-} 
-    ( Member (a -> b) tabu_prem
-    , Inferable conclusion '[a -> b] context tabu_concl tabu_prem
-    , Searchable conclusion '[b] context tabu_concl tabu_prem
-    , Searchable conclusion premises context tabu_concl tabu_prem
-    ) => Searchable conclusion ((a -> b) ': premises) context tabu_concl tabu_prem where
-    search
-        | member @(a -> b) @tabu_prem = Nothing
-        | otherwise = search @conclusion @'[b] @context @tabu_concl @tabu_prem
-            <|> infer @conclusion @'[a -> b] @context @tabu_concl @tabu_prem
-            <|> search @conclusion @premises @context @tabu_concl @tabu_prem
+    ( Inferable conclusion '[a -> b] context
+    , Searchable conclusion '[b] context
+    , Searchable conclusion premises context
+    ) => Searchable conclusion ((a -> b) ': premises) context where
+    search = search @conclusion @'[b] @context
+        <|> infer @conclusion @'[a -> b] @context
+        <|> search @conclusion @premises @context
 
 instance {-# OVERLAPPING #-}
-    ( Member (a `And` b) tabu_prem
-    , Inferable conclusion '[a `And` b] context tabu_concl tabu_prem
-    , Searchable conclusion '[a] context tabu_concl tabu_prem
-    , Searchable conclusion '[b] context tabu_concl tabu_prem
-    , Searchable conclusion premises context tabu_concl tabu_prem
-    ) => Searchable conclusion ((a `And` b) ': premises) context tabu_concl tabu_prem where
-    search
-        | member @(a `And` b) @tabu_prem = Nothing
-        | otherwise = infer @conclusion @'[a `And` b] @context @tabu_concl @tabu_prem
-            <|> search @conclusion @'[a] @context @tabu_concl @tabu_prem
-            <|> search @conclusion @'[b] @context @tabu_concl @tabu_prem
-            <|> search @conclusion @premises @context @tabu_concl @tabu_prem
+    ( Inferable conclusion '[a `And` b] context
+    , Searchable conclusion '[a] context
+    , Searchable conclusion '[b] context
+    , Searchable conclusion premises context
+    ) => Searchable conclusion ((a `And` b) ': premises) context where
+    search = infer @conclusion @'[a `And` b] @context
+        <|> search @conclusion @'[a] @context
+        <|> search @conclusion @'[b] @context
+        <|> search @conclusion @premises @context
 
--- instance {-# OVERLAPPING #-} 
---     ( Member (a `Or` b) tabu_prem
---     , Inferable conclusion '[a `Or` b] context tabu_concl tabu_prem
---     , Searchable conclusion premises context tabu_concl tabu_prem
---     ) => Searchable conclusion ((a `Or` b) ': premises) context tabu_concl tabu_prem where
---     search
---         | member @(a `Or` b) @tabu_prem = Nothing
---         | otherwise = infer @conclusion @'[a `Or` b] @context @tabu_concl @tabu_prem
---             <|> search @conclusion @premises @context @tabu_concl @tabu_prem
+instance {-# OVERLAPPING #-} 
+    ( Inferable conclusion '[a `Or` b] context
+    , Searchable conclusion premises context
+    ) => Searchable conclusion ((a `Or` b) ': premises) context where
+    search = infer @conclusion @'[a `Or` b] @context
+        <|> search @conclusion @premises @context
 
 -- fallback - skip
 instance {-# OVERLAPPABLE #-} 
-    ( Searchable conclusion premises context tabu_concl tabu_prem
-    ) => Searchable conclusion (premise ': premises) context tabu_concl tabu_prem where
-    search = search @conclusion @premises @context @tabu_concl @tabu_prem
+    ( Searchable conclusion premises context
+    ) => Searchable conclusion (premise ': premises) context where
+    search = search @conclusion @premises @context
 
 -- inference rules
 
 -- intro
 instance {-# OVERLAPPING #-}
-    Inferable True '[] context tabu_concl tabu_prem where
+    Inferable True '[] context where
     infer = Just $ const ()
 
 -- TODO: the ():context is very unefective, comparing contexts
 instance {-# OVERLAPPING #-}
-    ( Searchable b (() ': a ': context) (a ': context) tabu_concl tabu_prem
-    ) => Inferable (a -> b) '[] context tabu_concl tabu_prem where
+    ( Searchable b (() ': a ': context) (a ': context)
+    ) => Inferable (a -> b) '[] context where
     infer = (\b ctxt a -> b $ HCons a ctxt)
-        <$> search @b @(() ': a ': context) @(a ': context) @tabu_concl @tabu_prem
+        <$> search @b @(() ': a ': context) @(a ': context)
 
 instance {-# OVERLAPPING #-}
-    ( Searchable a (() ': context) context tabu_concl tabu_prem
-    , Searchable b (() ': context) context tabu_concl tabu_prem
-    ) => Inferable (a `And` b) '[] context tabu_concl tabu_prem where
+    ( Searchable a (() ': context) context
+    , Searchable b (() ': context) context
+    ) => Inferable (a `And` b) '[] context where
     infer = (\a b ctxt -> (a ctxt, b ctxt))
-        <$> search @a @(() ': context) @context @tabu_concl @tabu_prem
-        <*> search @b @(() ': context) @context @tabu_concl @tabu_prem
+        <$> search @a @(() ': context) @context
+        <*> search @b @(() ': context) @context
 
 instance {-# OVERLAPPING #-}
-    ( Searchable a (() ': context) context tabu_concl tabu_prem
-    , Searchable b (() ': context) context tabu_concl tabu_prem
-    ) => Inferable (a `Or` b) '[] context tabu_concl tabu_prem where
-    infer = case search @a @(() ': context) @context @tabu_concl @tabu_prem of
+    ( Searchable a (() ': context) context
+    , Searchable b (() ': context) context
+    ) => Inferable (a `Or` b) '[] context where
+    infer = case search @a @(() ': context) @context of
         Just a -> (\a ctxt -> Left $ a ctxt) <$> Just a
         Nothing -> (\b ctxt -> Right $ b ctxt)
-            <$> search @b @(() ': context) @context @tabu_concl @tabu_prem
+            <$> search @b @(() ': context) @context
 
 -- fallback
 instance {-# OVERLAPPABLE #-}
-    Inferable conclusion '[] context tabu_concl tabu_prem where
+    Inferable conclusion '[] context where
     infer = Nothing
 
 -- elim
 instance {-# OVERLAPPING #-}
-    ( Searchable (a -> conclusion) (() ': context) context tabu_concl tabu_prem
-    , Searchable a (() ': context) context tabu_concl tabu_prem
-    ) => Inferable conclusion '[a -> conclusion] context tabu_concl tabu_prem where
+    ( Find (a -> conclusion) context
+    , Searchable a (() ': context) context
+    ) => Inferable conclusion '[a -> conclusion] context where
     infer = (\f a ctxt -> f ctxt $ a ctxt)
-        <$> search @(a -> conclusion) @(() ': context) @context @tabu_concl @tabu_prem
-        <*> search @a @(() ': context) @context @tabu_concl @tabu_prem
+        <$> find @(a -> conclusion) @context
+        <*> search @a @(() ': context) @context
 
 instance {-# OVERLAPPING #-}
-    ( Searchable (conclusion `And` b) (() ': context) context tabu_concl tabu_prem
-    ) => Inferable conclusion '[conclusion `And` b] context tabu_concl tabu_prem where
+    ( Find (conclusion `And` b) context
+    ) => Inferable conclusion '[conclusion `And` b] context where
     infer = (\ab ctxt -> fst $ ab ctxt)
-        <$> search @(conclusion `And` b) @(() ': context) @context @tabu_concl @tabu_prem
+        <$> find @(conclusion `And` b) @context
+        
+instance {-# OVERLAPPING #-}
+    ( Find (a `And` conclusion) context
+    ) => Inferable conclusion '[a `And` conclusion] context where
+    infer = (\ab ctxt -> snd $ ab ctxt)
+        <$> find @(a `And` conclusion) @context
 
 instance {-# OVERLAPPING #-}
-    ( Searchable (a `And` conclusion) (() ': context) context tabu_concl tabu_prem
-    ) => Inferable conclusion '[a `And` conclusion] context tabu_concl tabu_prem where
-    infer = (\ab ctxt -> snd $ ab ctxt)
-        <$> search @(a `And` conclusion) @(() ': context) @context @tabu_concl @tabu_prem
-
--- instance {-# OVERLAPPING #-}
---     ( Searchable (a `Or` b) (() ': context) context tabu_concl tabu_prem
---     , Searchable conclusion (() ': a ': context) (a ': context) tabu_concl tabu_prem
---     , Searchable conclusion (() ': b ': context) (b ': context) tabu_concl tabu_prem
---     ) => Inferable conclusion '[a `Or` b] context tabu_concl tabu_prem where
---     infer = (\ab ac bc ctxt -> case ab ctxt of
---             Left a -> ac $ HCons a ctxt
---             Right b -> bc $ HCons b ctxt)
---         <$> search @(a `Or` b) @(() ': context) @context @tabu_concl @tabu_prem
---         <*> search @conclusion @(() ': a ': context) @(a ': context) @tabu_concl @tabu_prem
---         <*> search @conclusion @(() ': b ': context) @(b ': context) @tabu_concl @tabu_prem
+    ( Find (a `Or` b) context
+    , Searchable conclusion '[a] (a ': context)
+    , Searchable conclusion '[b] (b ': context)
+    ) => Inferable conclusion '[a `Or` b] context where
+    infer = (\ab ac bc ctxt -> case ab ctxt of
+            Left a -> ac $ HCons a ctxt
+            Right b -> bc $ HCons b ctxt)
+        <$> find @(a `Or` b) @context
+        <*> search @conclusion @'[a] @(a ': context)
+        <*> search @conclusion @'[b] @(b ': context)
 
 instance {-# OVERLAPPABLE #-}
-    Inferable conclusion premises context tabu_concl tabu_prem where
+    Inferable conclusion premises context where
     infer = Nothing
