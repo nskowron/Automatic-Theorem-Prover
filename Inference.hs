@@ -1,52 +1,181 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Inference where
 
-
 import Proposition
 
-import Data.HList ( HList(..) )
+import Control.Applicative ( (<|>) )
+import Data.HList ( HList(..), hHead, hTail )
+import Data.Kind ( Type )
+
+import Prelude hiding ( Traversable, traverse )
 
 
-proj 
-    :: a 
-    -> HList context -> a
-proj = const
+-- === DECLARATIONS === --
 
-implIntr 
-    :: (HList (a ': context) -> b) 
-    -> HList context -> (a `Impl` b)
-implIntr b context = \a -> b $ HCons a context 
+-- match Algorithm --
+class Inferable conclusion context where
+    infer :: Maybe (HList context -> conclusion)
 
-implElim 
-    :: (HList context -> a `Impl` b) -> (HList context -> a) 
-    -> HList context -> b
-implElim f a context = f context $ a context
+class Traversable conclusion premises context where
+    traverse :: Maybe (HList context -> conclusion)
 
-conjIntr 
-    :: (HList context -> a) -> (HList context -> b) 
-    -> HList context -> (a `And` b)
-conjIntr a b context = (a context, b context)
+class Matchable conclusion premise context where
+    match :: Maybe (HList context -> conclusion)
 
-conjElimLeft 
-    :: (HList context -> a `And` b)
-    -> HList context -> a
-conjElimLeft ab context = fst $ ab context
 
-conjElimRight 
-    :: (HList context -> a `And` b)
-    -> HList context -> b
-conjElimRight ab context = snd $ ab context
+-- Inference Rules --
+class Projectable conclusion context where
+    project :: Maybe (HList context -> conclusion)
 
-disjIntr 
-    :: Either (HList context -> a) (HList context -> b)
-    -> HList context -> a `Or` b
-disjIntr (Left a) context = Left $ a context
-disjIntr (Right b) context = Right $ b context
+class Introducible conclusion context where
+    intro :: Maybe (HList context -> conclusion)
 
-disjElim 
-    :: (HList context -> a `Or` b) -> (HList (a ': context) -> c) -> (HList (b ': context) -> c)
-    -> HList context -> c
-disjElim ab ac bc context = case ab context of
-    (Left a) -> ac $ HCons a context
-    (Right b) -> bc $ HCons b context
+class Eliminable conclusion premise context where
+    elim :: Maybe (HList context -> conclusion)
+
+
+-- === IMPLEMENTATION === --
+
+-- Inferable
+instance
+    ( Introducible conclusion context
+    , Traversable conclusion context context
+    ) => Inferable conclusion context where
+    infer = intro @conclusion @context
+        <|> traverse @conclusion @context @context
+
+-- Traversable --
+instance
+    Traversable conclusion '[] context where
+    traverse = Nothing
+
+instance {-# OVERLAPPING #-}
+    ( Projectable conclusion context
+    ) => Traversable conclusion (conclusion ': premises) context where
+    traverse = project @conclusion @context
+
+instance {-# OVERLAPPABLE #-}
+    ( Matchable conclusion premise context
+    , Traversable conclusion premises context
+    ) => Traversable conclusion (premise ': premises) context where
+    traverse = match @conclusion @premise @context
+        <|> traverse @conclusion @premises @context
+
+-- Matchable --
+instance {-# OVERLAPPING #-} 
+    ( Eliminable conclusion (a -> b) context
+    , Matchable conclusion b context
+    ) => Matchable conclusion (a -> b) context where
+    match = elim @conclusion @(a -> b) @context
+        <|> match @conclusion @b @context
+
+instance {-# OVERLAPPING #-}
+    ( Eliminable conclusion (a `And` b) context
+    , Matchable conclusion a context
+    , Matchable conclusion b context
+    ) => Matchable conclusion (a `And` b) context where
+    match = elim @conclusion @(a `And` b) @context
+        <|> match @conclusion @a @context
+        <|> match @conclusion @b @context
+
+instance {-# OVERLAPPING #-} 
+    ( Eliminable conclusion (a `Or` b) context
+    ) => Matchable conclusion (a `Or` b) context where
+    match = elim @conclusion @(a `Or` b) @context
+
+-- fallback
+instance {-# OVERLAPPABLE #-} 
+    Matchable conclusion premise context where
+    match = Nothing
+
+
+-- Projectable --
+instance 
+    Projectable conclusion '[] where
+    project = Nothing
+
+instance {-# OVERLAPPING #-} 
+    Projectable conclusion (conclusion ': context) where
+    project = Just hHead
+
+instance {-# OVERLAPPABLE #-} 
+    ( Projectable conclusion context
+    ) => Projectable conclusion (premise ': context) where
+    project = (. hTail) <$> project @conclusion @context
+
+-- Intro --
+instance {-# OVERLAPPING #-}
+    Introducible True context where
+    intro = Just $ const ()
+
+instance {-# OVERLAPPING #-}
+    ( Inferable b (a ': context)
+    ) => Introducible (a -> b) context where
+    intro = (\b ctxt a -> b $ HCons a ctxt)
+        <$> infer @b @(a ': context)
+
+instance {-# OVERLAPPING #-}
+    ( Inferable a context
+    , Inferable b context
+    ) => Introducible (a `And` b) context where
+    intro = (\a b ctxt -> (a ctxt, b ctxt))
+        <$> infer @a @context
+        <*> infer @b @context
+
+instance {-# OVERLAPPING #-}
+    ( Inferable a context
+    , Inferable b context
+    ) => Introducible (a `Or` b) context where
+    intro = case infer @a @context of
+        Just a -> (\a ctxt -> Left $ a ctxt)
+            <$> Just a
+        Nothing -> (\b ctxt -> Right $ b ctxt)
+            <$> infer @b @context
+
+-- fallback
+instance {-# OVERLAPPABLE #-}
+    Introducible conclusion context where
+    intro = Nothing
+
+-- Elim --
+instance {-# OVERLAPPING #-}
+    ( Traversable (a -> conclusion) context context
+    , Inferable a context -- think about it
+    ) => Eliminable conclusion (a -> conclusion) context where
+    elim = (\f a ctxt -> f ctxt $ a ctxt)
+        <$> traverse @(a -> conclusion) @context @context
+        <*> infer @a @context
+
+instance {-# OVERLAPPING #-}
+    ( Traversable (conclusion `And` b) context context
+    ) => Eliminable conclusion (conclusion `And` b) context where
+    elim = (\ab ctxt -> fst $ ab ctxt)
+        <$> traverse @(conclusion `And` b) @context @context
+        
+instance {-# OVERLAPPING #-}
+    ( Traversable (a `And` conclusion) context context
+    ) => Eliminable conclusion (a `And` conclusion) context where
+    elim = (\ab ctxt -> snd $ ab ctxt)
+        <$> traverse @(a `And` conclusion) @context @context
+
+instance {-# OVERLAPPING #-}
+    ( Traversable (a `Or` b) context context
+    , Matchable conclusion a (a ': context)
+    , Matchable conclusion b (b ': context)
+    ) => Eliminable conclusion (a `Or` b) context where
+    elim = (\ab ac bc ctxt -> case ab ctxt of
+            Left a -> ac $ HCons a ctxt
+            Right b -> bc $ HCons b ctxt)
+        <$> traverse @(a `Or` b) @context @context
+        <*> match @conclusion @a @(a ': context)
+        <*> match @conclusion @a @(b ': context)
+
+instance {-# OVERLAPPABLE #-}
+    Eliminable conclusion premise context where
+    elim = Nothing
