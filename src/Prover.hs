@@ -4,10 +4,9 @@
 module Prover where
 
 
+import HSet
 import Proposition
 import Inference
-
-import Data.HList ( HList(..) )
 
 -- Provable - describes provable propositions
 class Provable a where

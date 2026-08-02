@@ -15,6 +15,7 @@
 
 - [x] Figure out why Test 44 passes
   - Order in the Context. Test 45 fails that.
-  - [ ] Implement Context as a Set
+  - [x] Implement Context as a Set
+  - [ ] Fix runtime loop
 
 ## Debugging

@@ -8,9 +8,9 @@
 module Inference where
 
 import Proposition
+import HSet
 
 import Control.Applicative ( (<|>) )
-import Data.HList ( HList(..), hHead, hTail )
 import Data.Kind ( Type )
 
 import Prelude hiding ( Traversable, traverse )
@@ -20,24 +20,24 @@ import Prelude hiding ( Traversable, traverse )
 
 -- match Algorithm --
 class Inferable conclusion context where
-    infer :: Maybe (HList context -> conclusion)
+    infer :: Maybe (HSet context -> conclusion)
 
 class Traversable conclusion premises context where
-    traverse :: Maybe (HList context -> conclusion)
+    traverse :: Maybe (HSet context -> conclusion)
 
 class Matchable conclusion premise context where
-    match :: Maybe (HList context -> conclusion)
+    match :: Maybe (HSet context -> conclusion)
 
 
 -- Inference Rules --
 class Projectable conclusion context where
-    project :: Maybe (HList context -> conclusion)
+    project :: Maybe (HSet context -> conclusion)
 
 class Introducible conclusion context where
-    intro :: Maybe (HList context -> conclusion)
+    intro :: Maybe (HSet context -> conclusion)
 
 class Eliminable conclusion premise context where
-    elim :: Maybe (HList context -> conclusion)
+    elim :: Maybe (HSet context -> conclusion)
 
 
 -- === IMPLEMENTATION === --
@@ -115,10 +115,11 @@ instance {-# OVERLAPPING #-}
     intro = Just $ const ()
 
 instance {-# OVERLAPPING #-}
-    ( Inferable b (a ': context)
+    ( HCons a context
+    , Inferable b (Insert a context)
     ) => Introducible (a -> b) context where
-    intro = (\b ctxt a -> b $ HCons a ctxt)
-        <$> infer @b @(a ': context)
+    intro = (\b ctxt a -> b $ hCons a ctxt)
+        <$> infer @b @(Insert a context)
 
 instance {-# OVERLAPPING #-}
     ( Inferable a context
@@ -166,15 +167,17 @@ instance {-# OVERLAPPING #-}
 
 instance {-# OVERLAPPING #-}
     ( Traversable (a `Or` b) context context
-    , Inferable conclusion '[a]
-    , Inferable conclusion '[b]
+    , HCons a context
+    , HCons b context
+    , Inferable conclusion (Insert a context)
+    , Inferable conclusion (Insert b context)
     ) => Eliminable conclusion (a `Or` b) context where
     elim = (\ab ac bc ctxt -> case ab ctxt of
-            Left a -> ac $ HCons a HNil
-            Right b -> bc $ HCons b HNil)
+            Left a -> ac $ hCons a ctxt
+            Right b -> bc $ hCons b ctxt)
         <$> traverse @(a `Or` b) @context @context
-        <*> infer @conclusion @'[a]
-        <*> infer @conclusion @'[b]
+        <*> infer @conclusion @(Insert a context)
+        <*> infer @conclusion @(Insert b context)
 
 instance {-# OVERLAPPABLE #-}
     Eliminable conclusion premise context where
