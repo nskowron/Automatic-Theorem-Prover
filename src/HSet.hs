@@ -17,7 +17,7 @@ import Data.Kind ( Type )
 
 type HSet = HList
 
-type family Insert (e :: Type) (l :: [Type]) where
+type family Insert e l where
     Insert e '[] = '[e]
     Insert e (e ': l) = e ': l
     Insert e (l ': ls) = l ': (Insert e ls)

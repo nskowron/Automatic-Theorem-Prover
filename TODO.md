@@ -11,6 +11,14 @@
 
 - [ ] Using and Comparing Heuristics
 
+## Refactor
+
+- [ ] Order of imports
+
+- [ ] Order of constraints
+
+- [ ] Move Insert to Utils
+
 ## Testing
 
 - [x] Figure out why Test 44 passes
