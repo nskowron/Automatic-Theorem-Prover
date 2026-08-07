@@ -2,6 +2,8 @@
 
 ## Implementation
 
+- [ ] Move the Search Algorithm to compile time
+
 - [ ] Interactive Proving
   - [ ] Using Monads
 
@@ -20,10 +22,5 @@
 - [ ] Move Insert to Utils
 
 ## Testing
-
-- [x] Figure out why Test 44 passes
-  - Order in the Context. Test 45 fails that.
-  - [x] Implement Context as a Set
-  - [ ] Fix runtime loop
 
 ## Debugging
