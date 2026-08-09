@@ -62,8 +62,8 @@ runTests = do
     assertBool "T24" $ proofExists    $ prove @((PS A `Or` (PS B `Or` PS C)) -> ((PS A `Or` PS B) `Or` PS C))
 
     -- distribution
-    -- assertBool "T25" $ proofExists    $ prove @(PS A `And` (PS B `Or` PS C) -> ((PS A `And` PS B) `Or` (PS A `And` PS C)))
-    -- assertBool "T26" $ proofExists    $ prove @(((PS A `And` PS B) `Or` (PS A `And` PS C)) -> PS A `And` (PS B `Or` PS C))
+    assertBool "T25" $ proofExists    $ prove @(PS A `And` (PS B `Or` PS C) -> ((PS A `And` PS B) `Or` (PS A `And` PS C)))
+    assertBool "T26" $ proofExists    $ prove @(((PS A `And` PS B) `Or` (PS A `And` PS C)) -> PS A `And` (PS B `Or` PS C))
 
     -- absorption-ish
     assertBool "T27" $ proofExists    $ prove @(PS A -> (PS A `Or` PS B))
