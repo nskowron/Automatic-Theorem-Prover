@@ -20,10 +20,7 @@ import Prelude hiding ( Traversable, traverse )
 -- === DECLARATIONS === --
 
 -- search Algorithm --
-class Deducible (conclusion :: Type) (context :: [Type]) (inferred :: [(Type, [Type])]) where
-    deduce :: Maybe (HSet context -> conclusion)
-
-class Inferable (conclusion :: Type) (context :: [Type]) (inferred :: [(Type, [Type])]) (candidates :: [(Type, [Type])]) where
+class Inferable (conclusion :: Type) (context :: [Type]) (inferred :: [(Type, [Type])]) where
     infer :: Maybe (HSet context -> conclusion)
 
 data Find
@@ -48,28 +45,17 @@ class Eliminable conclusion premise context inferred where
 
 -- === IMPLEMENTATION === --
 
--- Deducible --
-instance
-    ( Inferable conclusion context inferred inferred
-    ) => Deducible conclusion context inferred where
-    deduce = infer @conclusion @context @inferred @inferred
-
 -- Inferable --
 instance
-    ( Introducible conclusion context (Insert '(conclusion, context) inferred)
-    , Traversable conclusion context context (Insert '(conclusion, context) inferred) Match
-    ) => Inferable conclusion context inferred '[] where
-    infer = intro @conclusion @context @(Insert '(conclusion, context) inferred)
-        <|> traverse @conclusion @context @context @(Insert '(conclusion, context) inferred) @Match
-
-instance {-# OVERLAPPING #-}
-    Inferable conclusion context inferred ('(conclusion, context) ': candidates) where
-    infer = Nothing
-
-instance {-# OVERLAPPABLE #-}
-    ( Inferable conclusion context inferred candidates
-    ) => Inferable conclusion context inferred (candidate ': candidates) where
-    infer = infer @conclusion @context @inferred @candidates
+    ( current ~ '(conclusion, context)
+    , Member current inferred
+    , Introducible conclusion context (Insert current inferred)
+    , Traversable conclusion context context (Insert current inferred) Match
+    ) => Inferable conclusion context inferred where
+    infer
+        | member @current @inferred = Nothing
+        | otherwise = intro @conclusion @context @(Insert current inferred)
+            <|> traverse @conclusion @context @context @(Insert current inferred) @Match
 
 -- Traversable --
 instance
@@ -136,28 +122,28 @@ instance {-# OVERLAPPING #-}
 
 instance {-# OVERLAPPING #-}
     ( HCons a context
-    , Deducible b (Insert a context) inferred
+    , Inferable b (Insert a context) inferred
     ) => Introducible (a -> b) context inferred where
     intro = (\b ctxt a -> b $ hCons a ctxt)
-        <$> deduce @b @(Insert a context) @inferred
+        <$> infer @b @(Insert a context) @inferred
 
 instance {-# OVERLAPPING #-}
-    ( Deducible a context inferred
-    , Deducible b context inferred
+    ( Inferable a context inferred
+    , Inferable b context inferred
     ) => Introducible (a `And` b) context inferred where
     intro = (\a b ctxt -> (a ctxt, b ctxt))
-        <$> deduce @a @context @inferred
-        <*> deduce @b @context @inferred
+        <$> infer @a @context @inferred
+        <*> infer @b @context @inferred
 
 instance {-# OVERLAPPING #-}
-    ( Deducible a context inferred
-    , Deducible b context inferred
+    ( Inferable a context inferred
+    , Inferable b context inferred
     ) => Introducible (a `Or` b) context inferred where
-    intro = case deduce @a @context @inferred of
+    intro = case infer @a @context @inferred of
         Just a -> (\a ctxt -> Left $ a ctxt)
             <$> Just a
         Nothing -> (\b ctxt -> Right $ b ctxt)
-            <$> deduce @b @context @inferred
+            <$> infer @b @context @inferred
 
 instance {-# OVERLAPPABLE #-} -- fallback
     Introducible conclusion context inferred where
@@ -166,11 +152,11 @@ instance {-# OVERLAPPABLE #-} -- fallback
 -- Elim --
 instance {-# OVERLAPPING #-}
     ( Traversable (a -> conclusion) context context inferred Find
-    , Deducible a context inferred
+    , Inferable a context inferred
     ) => Eliminable conclusion (a -> conclusion) context inferred where
     elim = (\f a ctxt -> f ctxt $ a ctxt)
         <$> traverse @(a -> conclusion) @context @context @inferred @Find
-        <*> deduce @a @context @inferred
+        <*> infer @a @context @inferred
 
 instance {-# OVERLAPPING #-}
     ( Traversable (conclusion `And` b) context context inferred Find
@@ -188,15 +174,15 @@ instance {-# OVERLAPPING #-}
     ( Traversable (a `Or` b) context context inferred Find
     , HCons a context
     , HCons b context
-    , Deducible conclusion (Insert a context) inferred
-    , Deducible conclusion (Insert b context) inferred
+    , Inferable conclusion (Insert a context) inferred
+    , Inferable conclusion (Insert b context) inferred
     ) => Eliminable conclusion (a `Or` b) context inferred where
     elim = (\ab ac bc ctxt -> case ab ctxt of
         Left a -> ac $ hCons a ctxt
         Right b -> bc $ hCons b ctxt)
             <$> traverse @(a `Or` b) @context @context @inferred @Find
-            <*> deduce @conclusion @(Insert a context) @inferred
-            <*> deduce @conclusion @(Insert b context) @inferred
+            <*> infer @conclusion @(Insert a context) @inferred
+            <*> infer @conclusion @(Insert b context) @inferred
             
 instance {-# OVERLAPPABLE #-}
     Eliminable conclusion premise context inferred where

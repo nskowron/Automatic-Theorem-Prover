@@ -92,5 +92,6 @@ runTests = do
     assertBool "T42" $ proofNotExists $ prove @(((PS A -> False) -> False) -> PS A)
     assertBool "T43" $ proofNotExists $ prove @(((PS A -> PS B) -> PS A) -> PS A)
 
+    -- loop-prone
     assertBool "T44" $ proofExists    $ prove @((PS A `Or` PS B) -> (PS A -> PS C) -> (PS B -> PS C) -> PS C)
     assertBool "T45" $ proofExists    $ prove @((PS A -> PS C) -> (PS B -> PS C) -> (PS A `Or` PS B) -> PS C)

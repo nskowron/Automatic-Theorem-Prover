@@ -18,9 +18,9 @@ class Provable a where
 -- each proof search tree node is (maybe) a function that
 -- takes in the context and returns proof of a proposition
 instance 
-    ( Deducible (a :: Type) ('[] :: [Type]) ('[] :: [(Type, [Type])])
+    ( Inferable (a :: Type) ('[] :: [Type]) ('[] :: [(Type, [Type])])
     ) => Provable (a :: Type) where
-    prove = deduce @(a :: Type) @('[] :: [Type]) @('[] :: [(Type, [Type])]) <*> pure HNil
+    prove = infer @(a :: Type) @('[] :: [Type]) @('[] :: [(Type, [Type])]) <*> pure HNil
 
 
 -- helper
