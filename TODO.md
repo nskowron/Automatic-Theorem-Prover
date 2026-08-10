@@ -35,3 +35,8 @@
 - [ ] Figure out compile-time tests
 
 ## Debugging
+
+- [x] Fix wrong reduction order
+  - [ ] Hard Refactor
+
+- [ ] Unprovable all with or in premise

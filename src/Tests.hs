@@ -15,7 +15,7 @@ data C
 proofExists :: a -> Bool
 proofExists _ = True
 
-proofNotExists :: Maybe a -> Bool
+proofNotExists :: a -> Bool
 proofNotExists = not . proofExists
 
 runTests :: IO ()

@@ -14,8 +14,8 @@ import Control.Applicative ( (<|>) )
 
 -- move to utils later --
 type family a :<|>: b where
+    Just a :<|>: _ = Just a
     Nothing :<|>: b = b
-    a :<|>: _ = a
 
 type family f :<$>: a where
     _ :<$>: Nothing = Nothing
@@ -32,8 +32,8 @@ type family Member a l where
     Member a (l ': ls) = Member a ls
 
 type family If p a b where
-    If True a b = a
-    If False a b = b
+    If True a _ = a
+    If False _ b = b
 
 type family FromMaybe d a where
     FromMaybe d Nothing = d
@@ -45,17 +45,17 @@ data Mode = Search | Find
 
 type family SearchNode (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) (mode :: Mode) :: Maybe Node where
 
-    SearchNode context conclusion parents Search =
-        If (Member '(context, conclusion) parents)
-        Nothing
-        ( TryIntro context conclusion (Insert '(context, conclusion) parents)
-            :<|>: IterNodes context conclusion context (Insert '(context, conclusion) parents) Search
-        )
+    SearchNode context conclusion parents mode =
+        ActualSearchNode context conclusion (Insert '(context, conclusion) parents) mode (Member '(context, conclusion) parents)
 
-    SearchNode context conclusion parents Find =
-        If (Member '(context, conclusion) parents)
-        Nothing
-        ( IterNodes context conclusion context (Insert '(context, conclusion) parents) Find )
+type family ActualSearchNode (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) (mode :: Mode) repeated :: Maybe Node where
+
+    ActualSearchNode context conclusion parents Search False =
+        TryIntro context conclusion (Insert '(context, conclusion) parents)
+            :<|>: IterNodes context conclusion context (Insert '(context, conclusion) parents) Search
+
+    ActualSearchNode context conclusion parents Find False = 
+        IterNodes context conclusion context (Insert '(context, conclusion) parents) Find
 
 
 type family IterNodes (context :: [Type]) (conclusion :: Type) (premises :: [Type]) (parents :: [([Type], Type)]) (mode :: Mode) :: Maybe Node where
@@ -66,6 +66,8 @@ type family IterNodes (context :: [Type]) (conclusion :: Type) (premises :: [Typ
     IterNodes context conclusion (premise ': premises) parents mode =
         TryElim context conclusion premise parents mode
             :<|>: IterNodes context conclusion premises parents mode
+
+    IterNodes _ _ _ _ _ = Nothing
 
 
 type family TryIntro (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) :: Maybe Node where
