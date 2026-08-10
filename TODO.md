@@ -8,6 +8,7 @@
   - [ ] Using Monads
 
 - [ ] Printing the Proof
+  - [ ] Think about changing Insert to :
 
 - [ ] Extend the Provable Theory
 
@@ -21,6 +22,14 @@
 
 - [ ] Move Insert to Utils
 
+- [ ] Replace Type with Proposition
+
+- [ ] Clean LANGUAGE pragmas
+
+- [ ] Think about reducing info in elim nodes
+
 ## Testing
+
+- [ ] Figure out compile-time tests
 
 ## Debugging

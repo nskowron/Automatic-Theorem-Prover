@@ -1,0 +1,100 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
+
+module Node where
+
+import Proposition
+import HSet
+
+import Data.Kind (Type)
+
+
+-- === Node === --
+data Node = Project
+
+    | IntroTrue
+    | IntroImpl Node
+    | IntroAnd Node Node
+    | IntroOrLeft Node
+    | IntroOrRight Node
+
+    -- elim false?
+    | ElimImpl Type Node Node
+    | ElimAndLeft Type Node
+    | ElimAndRight Type Node
+    | ElimOr Type Node Node Node
+
+
+-- === Inferable === --
+class Inferable (node :: Node) (context :: [Type]) (conclusion :: Type) where
+    infer :: HSet context -> conclusion
+
+
+-- === Project === --
+instance {-# OVERLAPPING #-}
+    Inferable Project (conclusion ': context) conclusion where
+    infer = hHead
+
+instance {-# OVERLAPPABLE #-}
+    ( Inferable Project context conclusion
+    ) => Inferable Project (premise ': context) conclusion where
+    infer = infer @Project @context @conclusion . hTail
+
+
+-- === Intro === --
+instance Inferable IntroTrue context True where
+    infer _ = ()
+
+instance
+    ( HCons a context
+    , Inferable node (Insert a context) b
+    ) => Inferable (IntroImpl node) context (a -> b) where
+    infer ctxt = \x -> infer @node @(Insert a context) @b (hCons x ctxt)
+
+instance 
+    ( Inferable node_left context a
+    , Inferable node_right context b
+    ) => Inferable (IntroAnd node_left node_right) context (a `And` b) where
+    infer ctxt = (infer @node_left @context @a ctxt, infer @node_right @context @b ctxt)
+
+instance
+    ( Inferable node context a
+    ) => Inferable (IntroOrLeft node) context (a `Or` b) where
+    infer ctxt = Left $ infer @node @context @a ctxt
+
+instance
+    ( Inferable node context b
+    ) => Inferable (IntroOrRight node) context (a `Or` b) where
+    infer ctxt = Right $ infer @node @context @b ctxt
+
+
+-- === Elim === --
+instance
+    ( Inferable node_impl context (a -> b)
+    , Inferable node_arg context a
+    ) => Inferable (ElimImpl (a -> b) node_impl node_arg) context b where
+    infer ctxt = infer @node_impl @context @(a -> b) ctxt $ infer @node_arg @context @a ctxt
+
+instance
+    ( Inferable node context (a `And` b)
+    ) => Inferable (ElimAndLeft (a `And` b) node) context a where
+    infer ctxt = fst $ infer @node @context @(a `And` b) ctxt
+
+instance
+    ( Inferable node context (a `And` b)
+    ) => Inferable (ElimAndRight (a `And` b) node) context b where
+    infer ctxt = snd $ infer @node @context @(a `And` b) ctxt
+
+instance
+    ( HCons a context
+    , HCons b context  
+    , Inferable node_or context (a `Or` b)
+    , Inferable node_left (Insert a context) c
+    , Inferable node_right (Insert b context) c
+    ) => Inferable (ElimOr (a `Or` b) node_or node_left node_right) context c where
+    infer ctxt = case infer @node_or @context @(a `Or` b) ctxt of
+        Left x -> infer @node_left @(Insert a context) @c (hCons x ctxt)
+        Right y -> infer @node_right @(Insert b context) @c (hCons y ctxt)
