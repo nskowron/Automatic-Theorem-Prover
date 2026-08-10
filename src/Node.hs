@@ -13,7 +13,9 @@ import Data.Kind (Type)
 
 
 -- === Node === --
-data Node = Project
+data Node = Unprovable
+
+    | Project
 
     | IntroTrue
     | IntroImpl Node

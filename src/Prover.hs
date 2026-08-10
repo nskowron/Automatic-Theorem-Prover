@@ -6,21 +6,23 @@ module Prover where
 
 import HSet
 import Proposition
-import Inference
+import Node
+import Search
 
 import Data.Kind ( Type )
 
 
 -- Provable - describes provable propositions
 class Provable a where
-    prove :: Maybe a
+    prove :: a
 
 -- each proof search tree node is (maybe) a function that
 -- takes in the context and returns proof of a proposition
 instance 
-    ( Inferable (a :: Type) ('[] :: [Type]) ('[] :: [(Type, [Type])])
-    ) => Provable (a :: Type) where
-    prove = infer @(a :: Type) @('[] :: [Type]) @('[] :: [(Type, [Type])]) <*> pure HNil
+    ( tree ~ FromMaybe Unprovable (SearchNode '[] proposition '[] Search)
+    , Inferable tree '[] proposition
+    ) => Provable proposition where
+    prove = infer @tree @'[] @proposition HNil
 
 
 -- helper

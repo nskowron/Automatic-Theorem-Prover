@@ -28,6 +28,8 @@
 
 - [ ] Think about reducing info in elim nodes
 
+- [ ] Reafctor
+
 ## Testing
 
 - [ ] Figure out compile-time tests

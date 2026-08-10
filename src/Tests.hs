@@ -12,9 +12,8 @@ data B
 data C
 
 --  helper for bool assertions
-proofExists :: Maybe a -> Bool
-proofExists (Just _) = True
-proofExists Nothing = False
+proofExists :: a -> Bool
+proofExists _ = True
 
 proofNotExists :: Maybe a -> Bool
 proofNotExists = not . proofExists
