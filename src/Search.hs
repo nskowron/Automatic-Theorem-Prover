@@ -38,6 +38,10 @@ type family If p a b where
 type family FromMaybe d a where
     FromMaybe d Nothing = d
     FromMaybe _ (Just a) = a
+
+type family FromNode n where
+    FromNode Unprovable = Int
+    FromNode _ = String
 --------------------------
 
 
@@ -48,7 +52,7 @@ type family SearchNode (context :: [Type]) (conclusion :: Type) (parents :: [([T
     SearchNode context conclusion parents mode =
         ActualSearchNode context conclusion (Insert '(context, conclusion) parents) mode (Member '(context, conclusion) parents)
 
-type family ActualSearchNode (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) (mode :: Mode) repeated :: Maybe Node where
+type family ActualSearchNode (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) (mode :: Mode) (repeated :: Type) :: Maybe Node where
 
     ActualSearchNode context conclusion parents Search False =
         TryIntro context conclusion (Insert '(context, conclusion) parents)
@@ -56,6 +60,8 @@ type family ActualSearchNode (context :: [Type]) (conclusion :: Type) (parents :
 
     ActualSearchNode context conclusion parents Find False = 
         IterNodes context conclusion context (Insert '(context, conclusion) parents) Find
+
+    ActualSearchNode _ _ _ _ True = Nothing
 
 
 type family IterNodes (context :: [Type]) (conclusion :: Type) (premises :: [Type]) (parents :: [([Type], Type)]) (mode :: Mode) :: Maybe Node where
@@ -97,7 +103,7 @@ type family TryElim (context :: [Type]) (conclusion :: Type) (premise :: Type) (
 
     TryElim context b (a -> b) parents mode =
         ElimImpl (a -> b)
-            :<$>: SearchNode context (a -> b) parents Find
+            :<$>: IterNodes context (a -> b) context parents Find
             :<*>: SearchNode context a parents Search
 
     TryElim context c (a -> b) parents mode =
@@ -105,20 +111,20 @@ type family TryElim (context :: [Type]) (conclusion :: Type) (premise :: Type) (
 
     TryElim context a (a `And` b) parents mode =
         ElimAndLeft (a `And` b)
-            :<$>: SearchNode context (a `And` b) parents Find
+            :<$>: IterNodes context (a `And` b) context parents Find
 
     TryElim context b (a `And` b) parents mode =
         ElimAndRight (a `And` b)
-            :<$>: SearchNode context (a `And` b) parents Find
+            :<$>: IterNodes context (a `And` b) context parents Find
 
     TryElim context c (a `And` b) parents mode =
         TryElim context c a parents mode
             :<|>: TryElim context c b parents mode
 
     TryElim context c (a `Or` b) parents Search =
-        ElimOr (a `Or` b)
-            :<$>: SearchNode context (a `Or` b) parents Find
-            :<*>: SearchNode (Insert a context) c parents Search
-            :<*>: SearchNode (Insert b context) c parents Search
+        ((ElimOr (a `Or` b)
+            :<$>: (IterNodes context (a `Or` b) context parents Find))
+            :<*>: (SearchNode (Insert a context) c parents Search))
+            :<*>: (SearchNode (Insert b context) c parents Search)
 
     TryElim _ _ _ _ _ = Nothing
