@@ -1,15 +1,14 @@
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE PolyKinds #-}
 
 module Node where
 
 import Proposition
-import HSet
+import Utils
 
-import Data.Kind (Type)
+import Data.HList ( HList(..), hHead, hTail )
+import Data.Kind ( Type )
 
 
 -- === Node === --
@@ -32,7 +31,7 @@ data Node = Unprovable
 
 -- === Inferable === --
 class Inferable (node :: Node) (context :: [Type]) (conclusion :: Type) where
-    infer :: HSet context -> conclusion
+    infer :: HList context -> conclusion
 
 
 -- === Project === --
@@ -51,10 +50,9 @@ instance Inferable IntroTrue context True where
     infer _ = ()
 
 instance
-    ( HCons a context
-    , Inferable node (Insert a context) b
+    ( Inferable node (a ': context) b
     ) => Inferable (IntroImpl node) context (a -> b) where
-    infer ctxt = \x -> infer @node @(Insert a context) @b (hCons x ctxt)
+    infer ctxt = \x -> infer @node @(a ': context) @b (HCons x ctxt)
 
 instance 
     ( Inferable node_left context a
@@ -91,12 +89,10 @@ instance
     infer ctxt = snd $ infer @node @context @(a `And` b) ctxt
 
 instance
-    ( HCons a context
-    , HCons b context  
-    , Inferable node_or context (a `Or` b)
-    , Inferable node_left (Insert a context) c
-    , Inferable node_right (Insert b context) c
+    ( Inferable node_or context (a `Or` b)
+    , Inferable node_left (a ': context) c
+    , Inferable node_right (b ': context) c
     ) => Inferable (ElimOr (a `Or` b) node_or node_left node_right) context c where
     infer ctxt = case infer @node_or @context @(a `Or` b) ctxt of
-        Left x -> infer @node_left @(Insert a context) @c (hCons x ctxt)
-        Right y -> infer @node_right @(Insert b context) @c (hCons y ctxt)
+        Left x -> infer @node_left @(a ': context) @c (HCons x ctxt)
+        Right y -> infer @node_right @(b ': context) @c (HCons y ctxt)

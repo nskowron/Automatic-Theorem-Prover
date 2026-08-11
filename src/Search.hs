@@ -1,130 +1,119 @@
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Search where
 
 import Proposition
+import Utils
 import Node
-import HSet
 
-import Data.Kind (Type)
-import Control.Applicative ( (<|>) )
+import Data.Kind ( Type )
 
 
--- move to utils later --
-type family a :<|>: b where
-    Just a :<|>: _ = Just a
-    Nothing :<|>: b = b
-
-type family f :<$>: a where
-    _ :<$>: Nothing = Nothing
-    f :<$>: Just a = Just (f a)
-
-type family f :<*>: a where
-    Nothing :<*>: _ = Nothing
-    _ :<*>: Nothing = Nothing
-    Just f :<*>: Just a = Just (f a)
-
-type family Member a l where
-    Member a '[] = False
-    Member a (a ': l) = True
-    Member a (l ': ls) = Member a ls
-
-type family If p a b where
-    If True a _ = a
-    If False _ b = b
-
-type family FromMaybe d a where
-    FromMaybe d Nothing = d
-    FromMaybe _ (Just a) = a
-
-type family FromNode n where
-    FromNode Unprovable = Int
-    FromNode _ = String
---------------------------
+-- === Flag === --
+data Flag = Search -- default, try to apply all inference rules
+    | Find -- try to find node in context, eg. no intro rules
+    | Stop -- used for loop detection
 
 
-data Mode = Search | Find
+-- === MakeNode === --
+type family MakeNode (flag :: Flag) (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) :: Maybe Node where
 
-type family SearchNode (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) (mode :: Mode) :: Maybe Node where
-
-    SearchNode context conclusion parents mode =
-        ActualSearchNode context conclusion (Insert '(context, conclusion) parents) mode (Member '(context, conclusion) parents)
-
-type family ActualSearchNode (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) (mode :: Mode) (repeated :: Type) :: Maybe Node where
-
-    ActualSearchNode context conclusion parents Search False =
-        TryIntro context conclusion (Insert '(context, conclusion) parents)
-            :<|>: IterNodes context conclusion context (Insert '(context, conclusion) parents) Search
-
-    ActualSearchNode context conclusion parents Find False = 
-        IterNodes context conclusion context (Insert '(context, conclusion) parents) Find
-
-    ActualSearchNode _ _ _ _ True = Nothing
+    MakeNode flag context conclusion parents =
+        TryInfer
+            (If (Member '(context, conclusion) parents)
+                Stop
+                flag)
+            context
+            conclusion
+            (Insert '(context, conclusion) parents)
 
 
-type family IterNodes (context :: [Type]) (conclusion :: Type) (premises :: [Type]) (parents :: [([Type], Type)]) (mode :: Mode) :: Maybe Node where
+-- === Try Infer === --
+type family TryInfer (flag :: Flag) (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) :: Maybe Node where
 
-    IterNodes context conclusion (conclusion ': premises) parents mode =
-        Just Project
+    TryInfer Search context conclusion parents =
+        TryProject context conclusion
+        :<|>: TryIntro context conclusion parents
+        :<|>: TryElim Search context conclusion context parents
 
-    IterNodes context conclusion (premise ': premises) parents mode =
-        TryElim context conclusion premise parents mode
-            :<|>: IterNodes context conclusion premises parents mode
+    TryInfer Find context conclusion parents =
+        TryProject context conclusion
+        :<|>: TryElim Find context conclusion context parents
 
-    IterNodes _ _ _ _ _ = Nothing
+    TryInfer Stop _ _ _ = Nothing
 
 
+-- === TryProject === --
+type family TryProject (context :: [Type]) (conclusion :: Type) where
+
+    TryProject context conclusion =
+        If (Member conclusion context)
+            (Just Project)
+            Nothing
+
+
+-- === TryIntro === --
 type family TryIntro (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) :: Maybe Node where
 
-    TryIntro _ () _ = Just IntroTrue
+    TryIntro _ True _ =
+        Just IntroTrue
 
     TryIntro context (a -> b) parents =
         IntroImpl
-            :<$>: SearchNode (Insert a context) b parents Search
+            :<$>: MakeNode Search (Insert a context) b parents
 
     TryIntro context (a `And` b) parents =
         IntroAnd
-            :<$>: SearchNode context a parents Search
-            :<*>: SearchNode context b parents Search
+            :<$>: MakeNode Search context a parents
+            :<*>: MakeNode Search context b parents
 
     TryIntro context (a `Or` b) parents =
-        ( IntroOrLeft
-            :<$>: SearchNode context a parents Search
-        ) :<|>: ( IntroOrRight
-            :<$>: SearchNode context b parents Search
-        )
+        (IntroOrLeft
+            :<$>: MakeNode Search context a parents)
+        :<|>: (IntroOrRight
+            :<$>: MakeNode Search context b parents)
 
     TryIntro _ _ _ = Nothing
 
     
-type family TryElim (context :: [Type]) (conclusion :: Type) (premise :: Type) (parents :: [([Type], Type)]) (mode :: Mode) :: Maybe Node where
+-- === TryElim === --
+type family TryElim (flag :: Flag) (context :: [Type]) (conclusion :: Type) (premises :: [Type]) (parents :: [([Type], Type)]) :: Maybe Node where
 
-    TryElim context b (a -> b) parents mode =
+    TryElim flag context b ((a -> b) ': premises) parents =
         ElimImpl (a -> b)
-            :<$>: IterNodes context (a -> b) context parents Find
-            :<*>: SearchNode context a parents Search
+            :<$>: MakeNode Find context (a -> b) parents
+            :<*>: MakeNode Search context a parents
+        :<|>: TryElim flag context b premises parents
 
-    TryElim context c (a -> b) parents mode =
-        TryElim context c b parents mode
+    TryElim flag context c ((a -> b) ': premises) parents =
+        TryElim flag context c '[b] parents
+        :<|>: TryElim flag context c premises parents
 
-    TryElim context a (a `And` b) parents mode =
+    TryElim flag context a ((a `And` b) ': premises) parents =
         ElimAndLeft (a `And` b)
-            :<$>: IterNodes context (a `And` b) context parents Find
+            :<$>: MakeNode Find context (a `And` b) parents
+        :<|>: TryElim flag context a premises parents
 
-    TryElim context b (a `And` b) parents mode =
+    TryElim flag context b ((a `And` b) ': premises) parents =
         ElimAndRight (a `And` b)
-            :<$>: IterNodes context (a `And` b) context parents Find
+            :<$>: MakeNode Find context (a `And` b) parents
+        :<|>: TryElim flag context b premises parents
 
-    TryElim context c (a `And` b) parents mode =
-        TryElim context c a parents mode
-            :<|>: TryElim context c b parents mode
+    TryElim flag context c ((a `And` b) ': premises) parents =
+        TryElim flag context c '[a] parents
+        :<|>: TryElim flag context c '[b] parents
+        :<|>: TryElim flag context c premises parents
 
-    TryElim context c (a `Or` b) parents Search =
-        ((ElimOr (a `Or` b)
-            :<$>: (IterNodes context (a `Or` b) context parents Find))
-            :<*>: (SearchNode (Insert a context) c parents Search))
-            :<*>: (SearchNode (Insert b context) c parents Search)
+    TryElim Search context c ((a `Or` b) ': premises) parents =
+        ElimOr (a `Or` b)
+            :<$>: MakeNode Find context (a `Or` b) parents
+            :<*>: MakeNode Search (Insert a context) c parents
+            :<*>: MakeNode Search (Insert b context) c parents
+        :<|>: TryElim Search context c premises parents
+
+    TryElim flag context conclusion (premise ': premises) parents =
+        TryElim flag context conclusion premises parents
 
     TryElim _ _ _ _ _ = Nothing

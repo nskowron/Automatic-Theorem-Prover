@@ -2,13 +2,13 @@
 
 ## Implementation
 
-- [ ] Move the Search Algorithm to compile time
+- [x] Move the Search Algorithm to compile time
 
 - [ ] Interactive Proving
   - [ ] Using Monads
 
 - [ ] Printing the Proof
-  - [ ] Think about changing Insert to :
+  - [x] Think about changing Insert to :
 
 - [ ] Extend the Provable Theory
 
@@ -16,27 +16,37 @@
 
 ## Refactor
 
-- [ ] Order of imports
+- [x] Order of imports
+  - own: in the order of compilation
+  - external: alphabetically
 
-- [ ] Order of constraints
+- [x] Order of constraints
+  - in the order that they're needed
 
-- [ ] Move Insert to Utils
+- [x] Move Insert to Utils
 
 - [ ] Replace Type with Proposition
 
-- [ ] Clean LANGUAGE pragmas
+- [x] Clean LANGUAGE pragmas
 
-- [ ] Think about reducing info in elim nodes
+- [x] Think about reducing info in elim nodes
 
-- [ ] Reafctor
+- [x] Hardcore Refactor
+
+- [x] Prettier error message?
+
+- [ ] README.md
+  - [ ] Add a more detailed description
+  - [ ] Add an easier way of running the tests, cabal maybe?
 
 ## Testing
 
-- [ ] Figure out compile-time tests
+- [x] Figure out compile-time tests
+
+- [ ] Make sure we don't lose computing ability because of the use of the Find flag
 
 ## Debugging
 
 - [x] Fix wrong reduction order
-  - [ ] Hard Refactor
 
-- [ ] Unprovable all with or in premise
+- [x] Unprovable all with or in premise

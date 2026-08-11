@@ -4,12 +4,10 @@ Bachelor's Thesis - Automatic Theorem Prover in Haskell, using Curry-Howard corr
 
 ## Tests
 
-To run tests you need to install the HUnit package:
+Run tests:
 
-`cabal install -lib HUnit`
+`cd test && ./runTests.sh && cd ..` *💬TODO*
 
-And then in ghci:
+You might need to give the script executable privileges:
 
-`> runTests`
-
-No message -> all tests passed
+`sudo chmod +x test/runTests.sh`

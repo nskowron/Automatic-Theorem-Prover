@@ -1,23 +1,37 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Utils where
 
-import Data.Kind ( Type )
 
+-- === Utils === --
+type family a :<|>: b where
+    Just a :<|>: _ = Just a
+    Nothing :<|>: b = b
 
-class Member e l where
-    member :: Bool
+type family f :<$>: a where
+    _ :<$>: Nothing = Nothing
+    f :<$>: Just a = Just (f a)
 
-instance
-    Member e '[] where
-    member = False
+type family f :<*>: a where
+    Nothing :<*>: _ = Nothing
+    _ :<*>: Nothing = Nothing
+    Just f :<*>: Just a = Just (f a)
 
-instance {-# OVERLAPPING #-}
-    Member e (e ': l) where
-    member = True
+type family Member a l where
+    Member a '[] = False
+    Member a (a ': l) = True
+    Member a (l ': ls) = Member a ls
 
-instance {-# OVERLAPPABLE #-}
-    ( Member e ls
-    ) => Member e (l ': ls) where
-    member = member @e @ls
+type family If p a b where
+    If True a _ = a
+    If False _ b = b
+
+type family FromMaybe d a where
+    FromMaybe d Nothing = d
+    FromMaybe _ (Just a) = a
+
+type family Insert e l where
+    Insert e '[] = '[e]
+    Insert e (e ': l) = e ': l
+    Insert e (l ': ls) = l ': (Insert e ls)
