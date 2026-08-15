@@ -38,7 +38,7 @@
 
 - [x] Prettier error message?
 
-- [ ] README.md
+- [x] README.md
   - [ ] Add a more detailed description
   - [x] Add an easier way of running the tests, cabal maybe?
 
