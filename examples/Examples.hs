@@ -19,11 +19,9 @@ p2 = prove @(A -> B -> (A `And` B))
 _ = prove @(A `Or` Not (B `And` Not B))
 
 -- we can also instead emit the proof as a String
-s3 = emit @((Not A `Or` Not B) -> Not (A `And` B))
-
--- then in interactive:
+-- in interactive:
 -------------------------------------------------------------------------------------
--- ghci> putStrLn s3
+-- ghci> emit @((Not A `Or` Not B) -> Not (A `And` B))
 -- "\x1 -> \x2 -> case x1 of { Left x3 -> x3 $ fst $ x2; Right x3 -> x3 $ snd $ x2 }"
 -------------------------------------------------------------------------------------
 

@@ -29,7 +29,8 @@
 - [x] Replace Type with Proposition
 
 - [x] Clean LANGUAGE pragmas
-  - [ ] Order of LANGUAGE pragmas
+  - [x] Order of LANGUAGE pragmas
+  - in cabal - alphabetically
 
 - [x] Think about reducing info in elim nodes
 
@@ -39,9 +40,11 @@
 
 - [ ] README.md
   - [ ] Add a more detailed description
-  - [ ] Add an easier way of running the tests, cabal maybe?
+  - [x] Add an easier way of running the tests, cabal maybe?
 
-- [ ] Sort files more into different dirs
+- [x] Sort files more into different dirs
+
+- [ ] The awkward display/emit
 
 ## Testing
 

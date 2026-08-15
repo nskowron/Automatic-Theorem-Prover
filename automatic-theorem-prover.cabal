@@ -1,0 +1,39 @@
+cabal-version: 3.0
+name: automatic-theorem-prover
+version: 0.1.0.0
+
+library prover
+  hs-source-dirs: src
+  exposed-modules:
+    Proposition
+    Node
+    Prover
+  default-extensions:
+    AllowAmbiguousTypes
+    DataKinds
+    TypeFamilies
+    UndecidableInstances
+  build-depends:
+    base,
+    HList
+  ghc-options:
+    -Wno-missing-home-modules
+  default-language: GHC2021
+
+library test
+  hs-source-dirs: test
+  exposed-modules:
+    AutomaticTests
+  build-depends:
+    base,
+    prover
+  default-language: GHC2021
+  
+library examples
+  hs-source-dirs: examples
+  exposed-modules:
+    Examples
+  build-depends:
+    base,
+    prover
+  default-language: GHC2021

@@ -1,4 +1,4 @@
-module Provable where
+module AutomaticTests where
 
 import Proposition
 import Prover

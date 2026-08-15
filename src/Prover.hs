@@ -1,11 +1,7 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-
 module Prover where
 
 import Utils
-import Proposition
+import Proposition hiding ( display )
 import Node
 import Search
 
@@ -16,7 +12,7 @@ import Data.Kind ( Type )
 -- === Provable === --
 class Proposition a => Provable a where
     prove :: a
-    emit :: String
+    emit :: IO ()
 
 instance 
     ( tree ~ FromMaybe Unprovable (MakeNode Search '[] proposition '[])
@@ -24,4 +20,4 @@ instance
     , Proposition proposition
     ) => Provable proposition where
     prove = infer @tree @'[] @proposition HNil
-    emit = Node.emit @tree @'[] @proposition 0
+    emit = putStrLn $ display @tree @'[] @proposition 0
