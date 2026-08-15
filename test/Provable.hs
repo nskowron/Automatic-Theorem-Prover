@@ -43,5 +43,9 @@ _ = prove @(False -> A)
 _ = prove @(False -> (A `And` B))
 _ = prove @(False -> (A `Or` B))
 
+_ = prove @((A `And` Not A) -> B)
+_ = prove @(A -> (B -> Not A) -> B -> C)
+_ = prove @(Not (A `And` False))
+
 _ = prove @((A `Or` B) -> (A -> C) -> (B -> C) -> C)
 _ = prove @((A -> C) -> (B -> C) -> (A `Or` B) -> C)
