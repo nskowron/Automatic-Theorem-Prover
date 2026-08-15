@@ -7,6 +7,8 @@
 
 - [ ] Interactive Proving
   - [ ] Using Monads
+  - [ ] Encode cursor movement as a function compition
+  (that traverses the tree)
 
 - [x] Printing the Proof
   - [x] Think about changing Insert to :
