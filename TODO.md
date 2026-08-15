@@ -8,7 +8,7 @@
 - [ ] Interactive Proving
   - [ ] Using Monads
 
-- [ ] Printing the Proof
+- [x] Printing the Proof
   - [x] Think about changing Insert to :
 
 - [ ] Extend the Provable Theory
@@ -41,11 +41,14 @@
   - [ ] Add a more detailed description
   - [ ] Add an easier way of running the tests, cabal maybe?
 
+- [ ] Sort files more into different dirs
+
 ## Testing
 
 - [x] Figure out compile-time tests
 
 - [ ] Make sure we don't lose computing ability because of the use of the Find flag
+  - [ ] Generally prove correctness
 
 ## Debugging
 

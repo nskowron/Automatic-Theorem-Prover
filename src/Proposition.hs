@@ -4,8 +4,6 @@ module Proposition where
 
 import Data.Void ( Void )
 
-import Prelude hiding( show )
-
 
 -- === Propositions === --
 type True = ()
@@ -22,42 +20,42 @@ data C
 
 -- === Proposition === --
 class Proposition a where
-    show :: String
+    display :: String
 
 instance Proposition True where
-    show = "True"
+    display = "True"
 
 instance Proposition False where
-    show = "False"
+    display = "False"
 
 instance {-# OVERLAPPABLE #-}
     ( Proposition a
     , Proposition b
     ) => Proposition (a -> b) where
-    show = "(" ++ show @a ++ " -> " ++ show @b ++ ")"
+    display = "(" ++ display @a ++ " -> " ++ display @b ++ ")"
 
 instance
     ( Proposition a
     , Proposition b
     ) => Proposition (a `And` b) where
-    show = "(" ++ show @a ++ " And " ++ show @b ++ ")"
+    display = "(" ++ display @a ++ " And " ++ display @b ++ ")"
 
 instance
     ( Proposition a
     , Proposition b
     ) => Proposition (a `Or` b) where
-    show = "(" ++ show @a ++ " Or " ++ show @b ++ ")"
+    display = "(" ++ display @a ++ " Or " ++ display @b ++ ")"
 
 instance {-# OVERLAPPING #-}
     ( Proposition a
     ) => Proposition (Not a) where
-    show = "!" ++ show @a
+    display = "!" ++ display @a
 
 instance Proposition A where
-    show = "A"
+    display = "A"
 
 instance Proposition B where
-    show = "B"
+    display = "B"
 
 instance Proposition C where
-    show = "C"
+    display = "C"
