@@ -3,6 +3,7 @@
 ## Implementation
 
 - [x] Move the Search Algorithm to compile time
+  - [x] Elim False rule
 
 - [ ] Interactive Proving
   - [ ] Using Monads

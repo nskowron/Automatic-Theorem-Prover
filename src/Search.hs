@@ -81,6 +81,11 @@ type family TryIntro (context :: [Type]) (conclusion :: Type) (parents :: [([Typ
 -- === TryElim === --
 type family TryElim (flag :: Flag) (context :: [Type]) (conclusion :: Type) (premises :: [Type]) (parents :: [([Type], Type)]) :: Maybe Node where
 
+    TryElim flag context a (False ': premises) parents =
+        ElimFalse
+            :<$>: MakeNode Find context False parents
+        :<|>: TryElim flag context a premises parents
+
     TryElim flag context b ((a -> b) ': premises) parents =
         ElimImpl (a -> b)
             :<$>: MakeNode Find context (a -> b) parents

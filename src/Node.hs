@@ -9,6 +9,7 @@ import Utils
 
 import Data.HList ( HList(..), hHead, hTail )
 import Data.Kind ( Type )
+import Data.Void ( absurd )
 
 
 -- === Node === --
@@ -22,7 +23,7 @@ data Node = Unprovable
     | IntroOrLeft Node
     | IntroOrRight Node
 
-    -- elim false?
+    | ElimFalse Node
     | ElimImpl Type Node Node
     | ElimAndLeft Type Node
     | ElimAndRight Type Node
@@ -72,6 +73,11 @@ instance
 
 
 -- === Elim === --
+instance
+    ( Inferable node context False
+    ) => Inferable (ElimFalse node) context a where
+    infer ctxt = absurd $ infer @node @context @False ctxt :: a
+
 instance
     ( Inferable node_impl context (a -> b)
     , Inferable node_arg context a

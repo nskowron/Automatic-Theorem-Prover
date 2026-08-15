@@ -43,9 +43,9 @@ _ = prove @(PS A `And` (PS B `Or` PS C) -> ((PS A `And` PS B) `Or` (PS A `And` P
 _ = prove @(((PS A `And` PS B) `Or` (PS A `And` PS C)) -> PS A `And` (PS B `Or` PS C))
 _ = prove @(PS A `And` (PS A `Or` PS B) -> PS A)
 
--- _ = prove @(False -> PS A)
--- _ = prove @(False -> (PS A `And` PS B))
--- _ = prove @(False -> (PS A `Or` PS B))
+_ = prove @(False -> PS A)
+_ = prove @(False -> (PS A `And` PS B))
+_ = prove @(False -> (PS A `Or` PS B))
 
 _ = prove @((PS A `Or` PS B) -> (PS A -> PS C) -> (PS B -> PS C) -> PS C)
 _ = prove @((PS A -> PS C) -> (PS B -> PS C) -> (PS A `Or` PS B) -> PS C)
