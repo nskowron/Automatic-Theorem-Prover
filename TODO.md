@@ -26,9 +26,10 @@
 
 - [x] Move Insert to Utils
 
-- [ ] Replace Type with Proposition
+- [x] Replace Type with Proposition
 
 - [x] Clean LANGUAGE pragmas
+  - [ ] Order of LANGUAGE pragmas
 
 - [x] Think about reducing info in elim nodes
 

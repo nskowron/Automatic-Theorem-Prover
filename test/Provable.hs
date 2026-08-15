@@ -4,48 +4,44 @@ import Proposition
 import Prover
 
 
-data A
-data B
-data C
-
 _ = prove @True
 _ = prove @(True -> True)
-_ = prove @(PS A -> True)
-_ = prove @((PS A `Or` PS B) -> True)
+_ = prove @(A -> True)
+_ = prove @((A `Or` B) -> True)
 
-_ = prove @(PS A -> PS A)
-_ = prove @(PS A -> PS B -> PS A)
+_ = prove @(A -> A)
+_ = prove @(A -> B -> A)
 
-_ = prove @(PS A -> (PS A `And` PS A))
-_ = prove @(PS A -> PS B -> (PS A `And` PS B))
+_ = prove @(A -> (A `And` A))
+_ = prove @(A -> B -> (A `And` B))
 
-_ = prove @((PS A `And` PS B) -> PS A)
-_ = prove @((PS A `And` PS B) -> PS B)
+_ = prove @((A `And` B) -> A)
+_ = prove @((A `And` B) -> B)
 
-_ = prove @((PS A `Or` PS A) -> PS A)
-_ = prove @(PS A -> (PS A `Or` PS A))
-_ = prove @(PS B -> (PS A `Or` PS B))
-_ = prove @(PS A `Or` True)
+_ = prove @((A `Or` A) -> A)
+_ = prove @(A -> (A `Or` A))
+_ = prove @(B -> (A `Or` B))
+_ = prove @(A `Or` True)
 
-_ = prove @(((PS A `And` PS B) -> PS C) -> (PS A -> PS B -> PS C))
-_ = prove @((PS A -> PS B -> PS C) -> ((PS A `And` PS B) -> PS C))
+_ = prove @(((A `And` B) -> C) -> (A -> B -> C))
+_ = prove @((A -> B -> C) -> ((A `And` B) -> C))
 
-_ = prove @((PS A -> PS B) -> (PS B -> PS C) -> (PS A -> PS C))
-_ = prove @((PS A -> (PS B -> PS C)) -> (PS B -> (PS A -> PS C)))
-_ = prove @((PS A -> PS B) -> (PS A -> PS C) -> (PS A -> (PS B `And` PS C)))
+_ = prove @((A -> B) -> (B -> C) -> (A -> C))
+_ = prove @((A -> (B -> C)) -> (B -> (A -> C)))
+_ = prove @((A -> B) -> (A -> C) -> (A -> (B `And` C)))
 
-_ = prove @((PS A `And` PS B) -> (PS B `And` PS A))
-_ = prove @((PS A `Or` PS B) -> (PS B `Or` PS A))
+_ = prove @((A `And` B) -> (B `And` A))
+_ = prove @((A `Or` B) -> (B `Or` A))
 
-_ = prove @((PS A `And` (PS B `And` PS C)) -> ((PS A `And` PS B) `And` PS C))
-_ = prove @((PS A `Or` (PS B `Or` PS C)) -> ((PS A `Or` PS B) `Or` PS C))
-_ = prove @(PS A `And` (PS B `Or` PS C) -> ((PS A `And` PS B) `Or` (PS A `And` PS C)))
-_ = prove @(((PS A `And` PS B) `Or` (PS A `And` PS C)) -> PS A `And` (PS B `Or` PS C))
-_ = prove @(PS A `And` (PS A `Or` PS B) -> PS A)
+_ = prove @((A `And` (B `And` C)) -> ((A `And` B) `And` C))
+_ = prove @((A `Or` (B `Or` C)) -> ((A `Or` B) `Or` C))
+_ = prove @(A `And` (B `Or` C) -> ((A `And` B) `Or` (A `And` C)))
+_ = prove @(((A `And` B) `Or` (A `And` C)) -> A `And` (B `Or` C))
+_ = prove @(A `And` (A `Or` B) -> A)
 
-_ = prove @(False -> PS A)
-_ = prove @(False -> (PS A `And` PS B))
-_ = prove @(False -> (PS A `Or` PS B))
+_ = prove @(False -> A)
+_ = prove @(False -> (A `And` B))
+_ = prove @(False -> (A `Or` B))
 
-_ = prove @((PS A `Or` PS B) -> (PS A -> PS C) -> (PS B -> PS C) -> PS C)
-_ = prove @((PS A -> PS C) -> (PS B -> PS C) -> (PS A `Or` PS B) -> PS C)
+_ = prove @((A `Or` B) -> (A -> C) -> (B -> C) -> C)
+_ = prove @((A -> C) -> (B -> C) -> (A `Or` B) -> C)

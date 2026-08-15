@@ -4,13 +4,8 @@ import Proposition
 import Prover
 
 
--- some propositional symbols for easy handling (TODO)
-data A
-data B
-data C
-
 -- define a proposition (a type)
-type T1 = PS A -> PS B -> (PS A `And` PS B)
+type T1 = A -> B -> (A `And` B)
 
 -- and try to prove it
 p1 = prove @T1 -- p1 :: T1
@@ -20,7 +15,7 @@ p1 = prove @T1 -- p1 :: T1
 -- existing object of type T1 - therefore T1 is proven
 
 -- and now an unprovable one
-type T2 = True -> (PS A -> PS B)
+type T2 = True -> (A -> B)
 -- p2 = prove @T2
 
 -- the above line should result in a compile error 
