@@ -5,6 +5,7 @@ import Utils
 import Node
 
 import Data.Kind ( Type )
+import Data.Proxy ( Proxy(..) )
 
 
 -- === Flag === --
@@ -83,7 +84,7 @@ type family TryElim (flag :: Flag) (context :: [Type]) (conclusion :: Type) (pre
         :<|>: TryElim flag context a premises parents
 
     TryElim flag context b ((a -> b) ': premises) parents =
-        ElimImpl (a -> b)
+        ElimImpl ('Proxy :: Proxy (a -> b))
             :<$>: MakeNode Find context (a -> b) parents
             :<*>: MakeNode Search context a parents
         :<|>: TryElim flag context b premises parents
@@ -93,12 +94,12 @@ type family TryElim (flag :: Flag) (context :: [Type]) (conclusion :: Type) (pre
         :<|>: TryElim flag context c premises parents
 
     TryElim flag context a ((a `And` b) ': premises) parents =
-        ElimAndLeft (a `And` b)
+        ElimAndLeft ('Proxy :: Proxy (a `And` b))
             :<$>: MakeNode Find context (a `And` b) parents
         :<|>: TryElim flag context a premises parents
 
     TryElim flag context b ((a `And` b) ': premises) parents =
-        ElimAndRight (a `And` b)
+        ElimAndRight ('Proxy :: Proxy (a `And` b))
             :<$>: MakeNode Find context (a `And` b) parents
         :<|>: TryElim flag context b premises parents
 
@@ -108,7 +109,7 @@ type family TryElim (flag :: Flag) (context :: [Type]) (conclusion :: Type) (pre
         :<|>: TryElim flag context c premises parents
 
     TryElim Search context c ((a `Or` b) ': premises) parents =
-        ElimOr (a `Or` b)
+        ElimOr ('Proxy :: Proxy (a `Or` b))
             :<$>: MakeNode Find context (a `Or` b) parents
             :<*>: MakeNode Search (Insert a context) c parents
             :<*>: MakeNode Search (Insert b context) c parents
