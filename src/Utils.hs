@@ -2,6 +2,9 @@ module Utils where
 
 
 -- === Utils === --
+class ShowType a where
+    showType :: String
+
 type family a :<|>: b where
     Just a :<|>: _ = Just a
     Nothing :<|>: b = b
@@ -31,4 +34,4 @@ type family FromMaybe d a where
 type family Insert e l where
     Insert e '[] = '[e]
     Insert e (e ': l) = e ': l
-    Insert e (l ': ls) = l ': (Insert e ls)
+    Insert e (l ': ls) = l ': Insert e ls

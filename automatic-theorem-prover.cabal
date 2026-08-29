@@ -8,6 +8,7 @@ library prover
     Proposition
     Node
     Prover
+    Interactive
   default-extensions:
     AllowAmbiguousTypes
     DataKinds

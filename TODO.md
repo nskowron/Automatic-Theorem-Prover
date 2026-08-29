@@ -7,7 +7,7 @@
 
 - [ ] Interactive Proving
   - [ ] Using Monads
-  - [ ] Encode cursor movement as a function compition
+  - [ ] Encode cursor movement as a function composition
   (that traverses the tree)
 
 - [x] Printing the Proof
@@ -24,6 +24,8 @@
   - [x] Add an easier way of running the tests, cabal maybe?
 
 - [ ] The awkward display/emit
+  - [ ] ShowNode with the '()
+  - [ ] Add printing of goal conclusion type and intro var types
 
 ## Testing
 

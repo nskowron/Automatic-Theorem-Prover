@@ -12,7 +12,6 @@ import Data.Kind ( Type )
 -- === Provable === --
 class Proposition a => Provable a where
     prove :: a
-    emit :: IO ()
 
 instance 
     ( tree ~ FromMaybe Unprovable (MakeNode Search '[] proposition '[])
@@ -20,4 +19,3 @@ instance
     , Proposition proposition
     ) => Provable proposition where
     prove = infer @tree @'[] @proposition HNil
-    emit = putStrLn $ display @tree @'[] @proposition 0
