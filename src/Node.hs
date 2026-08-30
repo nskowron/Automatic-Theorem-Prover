@@ -5,25 +5,27 @@ import Utils
 
 import Data.HList ( HList(..), hHead, hTail )
 import Data.Kind ( Type )
+import Data.Proxy ( Proxy(..) )
 import Data.Void ( absurd )
 
 
 -- === Node === --
-data Node = Unprovable
+data Node where
+    Unprovable :: Node
 
-    | Project
+    Project :: Node
 
-    | IntroTrue
-    | IntroImpl Node
-    | IntroAnd Node Node
-    | IntroOrLeft Node
-    | IntroOrRight Node
+    IntroTrue :: Node
+    IntroImpl :: Node -> Node
+    IntroAnd :: Node -> Node -> Node
+    IntroOrLeft :: Node -> Node
+    IntroOrRight :: Node -> Node
 
-    | ElimFalse Node
-    | ElimImpl Type Node Node
-    | ElimAndLeft Type Node
-    | ElimAndRight Type Node
-    | ElimOr Type Node Node Node
+    ElimFalse :: Node -> Node
+    ElimImpl :: Proxy a -> Node -> Node -> Node
+    ElimAndLeft :: Proxy a -> Node -> Node
+    ElimAndRight :: Proxy a -> Node -> Node
+    ElimOr :: Proxy a -> Node -> Node -> Node -> Node
 
 
 -- === Inferable === --
@@ -77,24 +79,24 @@ instance
 instance
     ( Inferable node_impl context (a -> b)
     , Inferable node_arg context a
-    ) => Inferable (ElimImpl (a -> b) node_impl node_arg) context b where
+    ) => Inferable (ElimImpl ('Proxy :: Proxy (a -> b)) node_impl node_arg) context b where
     infer ctxt = infer @node_impl @context @(a -> b) ctxt $ infer @node_arg @context @a ctxt
 
 instance
     ( Inferable node context (a `And` b)
-    ) => Inferable (ElimAndLeft (a `And` b) node) context a where
+    ) => Inferable (ElimAndLeft ('Proxy :: Proxy (a `And` b)) node) context a where
     infer ctxt = fst $ infer @node @context @(a `And` b) ctxt
 
 instance
     ( Inferable node context (a `And` b)
-    ) => Inferable (ElimAndRight (a `And` b) node) context b where
+    ) => Inferable (ElimAndRight ('Proxy :: Proxy (a `And` b)) node) context b where
     infer ctxt = snd $ infer @node @context @(a `And` b) ctxt
 
 instance
     ( Inferable node_or context (a `Or` b)
     , Inferable node_left (a ': context) c
     , Inferable node_right (b ': context) c
-    ) => Inferable (ElimOr (a `Or` b) node_or node_left node_right) context c where
+    ) => Inferable (ElimOr ('Proxy :: Proxy (a `Or` b)) node_or node_left node_right) context c where
     infer ctxt = case infer @node_or @context @(a `Or` b) ctxt of
         Left x -> infer @node_left @(a ': context) @c (HCons x ctxt)
         Right y -> infer @node_right @(b ': context) @c (HCons y ctxt)
