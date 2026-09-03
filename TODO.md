@@ -4,6 +4,8 @@
 
 - [x] Move the Search Algorithm to compile time
   - [x] Elim False rule
+  - [ ] Think of passing the type into Project Node
+    - can show (not infer) without passing the type
 
 - [ ] Interactive Proving
   - [ ] Using Monads
@@ -22,6 +24,8 @@
 - [x] README.md
   - [ ] Add a more detailed description
   - [x] Add an easier way of running the tests, cabal maybe?
+
+- [ ] Organize source files
 
 - [ ] The awkward display/emit
   - [ ] ShowNode with the '()

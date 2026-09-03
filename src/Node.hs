@@ -1,7 +1,7 @@
 module Node where
 
-import Proposition hiding ( display )
 import Utils
+import Proposition
 
 import Data.HList ( HList(..), hHead, hTail )
 import Data.Kind ( Type )

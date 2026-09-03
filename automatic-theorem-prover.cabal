@@ -8,6 +8,8 @@ library prover
     Proposition
     Node
     Prover
+    Inference
+    Tactics
     Interactive
   default-extensions:
     AllowAmbiguousTypes
@@ -16,6 +18,7 @@ library prover
     UndecidableInstances
   build-depends:
     base,
+    indexed,
     HList
   ghc-options:
     -Wno-missing-home-modules

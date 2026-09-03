@@ -1,14 +1,16 @@
 module Proposition where
 
+import Utils
+
 import Data.Void ( Void )
 
 
 -- === Propositions === --
 type True = ()
 type False = Void
-type Impl a b = a -> b
-type And a b = (a, b)
-type Or a b = Either a b
+type a `Impl` b = a -> b
+type a `And` b = (a, b)
+type a `Or` b = Either a b
 type Not a = a -> False
 
 data A
@@ -16,44 +18,41 @@ data B
 data C
 
 
--- === Proposition === --
-class Proposition a where
-    display :: String
+-- === ShowType === --
+instance ShowType True where
+    showType = "True"
 
-instance Proposition True where
-    display = "True"
-
-instance Proposition False where
-    display = "False"
+instance ShowType False where
+    showType = "False"
 
 instance {-# OVERLAPPABLE #-}
-    ( Proposition a
-    , Proposition b
-    ) => Proposition (a -> b) where
-    display = "(" ++ display @a ++ " -> " ++ display @b ++ ")"
+    ( ShowType a
+    , ShowType b
+    ) => ShowType (a -> b) where
+    showType = "(" ++ showType @a ++ " -> " ++ showType @b ++ ")"
 
 instance
-    ( Proposition a
-    , Proposition b
-    ) => Proposition (a `And` b) where
-    display = "(" ++ display @a ++ " And " ++ display @b ++ ")"
+    ( ShowType a
+    , ShowType b
+    ) => ShowType (a `And` b) where
+    showType = "(" ++ showType @a ++ " And " ++ showType @b ++ ")"
 
 instance
-    ( Proposition a
-    , Proposition b
-    ) => Proposition (a `Or` b) where
-    display = "(" ++ display @a ++ " Or " ++ display @b ++ ")"
+    ( ShowType a
+    , ShowType b
+    ) => ShowType (a `Or` b) where
+    showType = "(" ++ showType @a ++ " Or " ++ showType @b ++ ")"
 
 instance {-# OVERLAPPING #-}
-    ( Proposition a
-    ) => Proposition (Not a) where
-    display = "!" ++ display @a
+    ( ShowType a
+    ) => ShowType (Not a) where
+    showType = "!" ++ showType @a
 
-instance Proposition A where
-    display = "A"
+instance ShowType A where
+    showType = "A"
 
-instance Proposition B where
-    display = "B"
+instance ShowType B where
+    showType = "B"
 
-instance Proposition C where
-    display = "C"
+instance ShowType C where
+    showType = "C"
