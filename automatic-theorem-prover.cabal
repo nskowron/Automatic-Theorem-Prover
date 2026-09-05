@@ -37,7 +37,11 @@ library examples
   hs-source-dirs: examples
   exposed-modules:
     Examples
+  default-extensions:
+    RebindableSyntax
   build-depends:
     base,
+    indexed,
+    do-notation,
     prover
   default-language: GHC2021

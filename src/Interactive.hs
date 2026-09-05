@@ -3,12 +3,20 @@ module Interactive where
 import Utils
 import Node
 import Search
+import Inference
+import Tactics
 
 import Data.Kind ( Type )
 
 import Prelude hiding ( interact )
 
 
+-- === Prove === --
+prove :: Tactic a () () -> a
+prove (Tactic f) = f (\() -> ())
+
+
+-- === Experiments === --
 class Interactive proposition where
     interact :: IO proposition
 

@@ -8,7 +8,8 @@
     - can show (not infer) without passing the type
 
 - [ ] Interactive Proving
-  - [ ] Using Monads
+  - [x] Using Monads
+    - [ ] ivb style for now, non-interactive
   - [ ] Encode cursor movement as a function composition
   (that traverses the tree)
 
@@ -35,5 +36,7 @@
 
 - [ ] Make sure we don't lose computing ability because of the use of the Find flag
   - [ ] Generally prove correctness
+
+- [ ] "Interactive" tests
 
 ## Debugging

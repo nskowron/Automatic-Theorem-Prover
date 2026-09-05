@@ -19,3 +19,29 @@ instance IxApplicative Tactic where
 
 instance IxMonad Tactic where
     ibind f (Tactic a) = Tactic $ \g -> a (\b -> let Tactic h = f b in h g)
+
+
+-- === Tactics === --
+apply :: (a -> b) -> Tactic b a ()
+apply f = Tactic $ \a -> f (a ())
+
+left :: Tactic (a `Or` b) a ()
+left = Tactic $ \a -> Left (a ())
+
+right :: Tactic (a `Or` b) b ()
+right = Tactic $ \b -> Right (b ())
+
+intro :: Tactic (a -> b) b a
+intro = Tactic id
+
+exact :: a -> Tactic a () ()
+exact a = Tactic $ const a
+
+split :: Tactic a () () -> Tactic b () () -> Tactic (a `And` b) () ()
+split (Tactic a) (Tactic b) = Tactic $ \id -> (a id, b id)
+
+assert :: Tactic a () () -> Tactic m m a
+assert (Tactic a) = ireturn $ a id
+
+qed :: Tactic () () ()
+qed = ireturn ()
