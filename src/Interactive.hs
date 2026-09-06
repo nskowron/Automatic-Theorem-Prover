@@ -6,6 +6,7 @@ import Search
 import Inference
 import Tactics
 
+import Data.HList ( HList(..) )
 import Data.Kind ( Type )
 
 import Prelude hiding ( interact )
@@ -17,25 +18,13 @@ prove (Tactic f) = f (\() -> ())
 
 
 -- === Experiments === --
-class Interactive proposition where
-    interact :: IO proposition
+-- interactive :: IO a
+-- interactive = do
+--     a <- loop HNil
+--     return $ prove a
 
-instance
-    ( Loop Unprovable proposition
-    ) => Interactive proposition where
-    interact = loop @Unprovable @proposition
-
-class Loop (node :: Node) (proposition :: Type) where
-    loop :: IO proposition
-
-instance
-    ( ShowType '(node, proposition)
-    , Loop (FromMaybe Unprovable (MakeNode Search '[] proposition '[])) proposition
-    ) => Loop node proposition where
-    loop = do
-        putStrLn $ showType @'(node, proposition)
-        input <- getLine
-
-        case input of
-            "prove" -> loop @(FromMaybe Unprovable (MakeNode Search '[] proposition '[])) @proposition
-            _ -> loop @node @proposition
+-- loop :: HList ls -> IO (Tactic a () ())
+-- loop ls = do
+--     input <- getLine
+--     case input of
+--         "q" -> return qed
