@@ -9,7 +9,7 @@
 
 - [ ] Interactive Proving
   - [x] Using Monads
-    - [ ] ivb style for now, non-interactive
+    - ivb style for now, non-interactive
   - [ ] Encode cursor movement as a function composition
   (that traverses the tree)
 
@@ -27,6 +27,7 @@
   - [x] Add an easier way of running the tests, cabal maybe?
 
 - [ ] Organize source files
+  - [ ] Move language extensions from Examples cabal into the file
 
 - [ ] The awkward display/emit
   - [ ] ShowNode with the '()
