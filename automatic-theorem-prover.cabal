@@ -11,6 +11,7 @@ library prover
     Inference
     Tactics
     Interactive
+    FOL
   default-extensions:
     AllowAmbiguousTypes
     DataKinds
@@ -19,6 +20,7 @@ library prover
   build-depends:
     base,
     indexed,
+    data-debruijn,
     HList
   ghc-options:
     -Wno-missing-home-modules
