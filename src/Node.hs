@@ -1,3 +1,8 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE GADTs #-}
+
 module Node where
 
 import Utils
@@ -11,7 +16,7 @@ import Data.Void ( absurd )
 -- === Node === --
 data Node = Unprovable
 
-    | Project
+    | Project Type
 
     | IntroTrue
     | IntroImpl Node
@@ -20,166 +25,166 @@ data Node = Unprovable
     | IntroOrRight Node
 
     | ElimFalse Node
-    | ElimImpl Type Node Node
-    | ElimAndLeft Type Node
-    | ElimAndRight Type Node
-    | ElimOr Type Node Node Node
+    | ElimImpl Node Node
+    | ElimAndLeft Node
+    | ElimAndRight Node
+    | ElimOr Node Node Node
 
 
 -- === Inferable === --
-class Inferable (node :: Node) (context :: [Type]) (conclusion :: Type) where
+class Inferable (node :: Node) (context :: [Type]) where
     infer :: HList context -> conclusion
 
 
 -- === Project === --
 instance {-# OVERLAPPING #-}
-    Inferable Project (conclusion ': context) conclusion where
+    Inferable ('Project :: Node a) (a ': context) where
     infer = hHead
 
 instance {-# OVERLAPPABLE #-}
-    ( Inferable Project context conclusion
-    ) => Inferable Project (premise ': context) conclusion where
-    infer = infer @Project @context @conclusion . hTail
+    ( Inferable ('Project :: Node a) context
+    ) => Inferable ('Project :: Node a) (premise ': context) where
+    infer = infer @('Project :: Node a) @context . hTail
 
 
 -- === Intro === --
-instance Inferable IntroTrue context True where
+instance Inferable IntroTrue context where
     infer _ = ()
 
 instance
-    ( Inferable node (a ': context) b
-    ) => Inferable (IntroImpl node) context (a -> b) where
-    infer ctxt = \x -> infer @node @(a ': context) @b (HCons x ctxt)
+    ( Inferable node (a ': context)
+    ) => Inferable (IntroImpl node) context where
+    infer ctxt = \x -> infer @node @(a ': context) (HCons x ctxt)
 
 instance 
-    ( Inferable node_left context a
-    , Inferable node_right context b
-    ) => Inferable (IntroAnd node_left node_right) context (a `And` b) where
-    infer ctxt = (infer @node_left @context @a ctxt, infer @node_right @context @b ctxt)
+    ( Inferable node_left context
+    , Inferable node_right context
+    ) => Inferable (IntroAnd node_left node_right) context where
+    infer ctxt = (infer @node_left @context ctxt, infer @node_right @context ctxt)
 
 instance
-    ( Inferable node context a
-    ) => Inferable (IntroOrLeft node) context (a `Or` b) where
-    infer ctxt = Left $ infer @node @context @a ctxt
+    ( Inferable node context
+    ) => Inferable (IntroOrLeft node) context where
+    infer ctxt = Left $ infer @node @context ctxt
 
 instance
-    ( Inferable node context b
-    ) => Inferable (IntroOrRight node) context (a `Or` b) where
-    infer ctxt = Right $ infer @node @context @b ctxt
+    ( Inferable node context
+    ) => Inferable (IntroOrRight node) context where
+    infer ctxt = Right $ infer @node @context ctxt
 
 
 -- === Elim === --
 instance
-    ( Inferable node context False
-    ) => Inferable (ElimFalse node) context a where
-    infer ctxt = absurd $ infer @node @context @False ctxt :: a
+    ( Inferable node context
+    ) => Inferable (ElimFalse node) context where
+    infer ctxt = absurd $ infer @node @context ctxt
 
 instance
-    ( Inferable node_impl context (a -> b)
-    , Inferable node_arg context a
-    ) => Inferable (ElimImpl (a -> b) node_impl node_arg) context b where
-    infer ctxt = infer @node_impl @context @(a -> b) ctxt $ infer @node_arg @context @a ctxt
+    ( Inferable node_impl context
+    , Inferable node_arg context
+    ) => Inferable (ElimImpl node_impl node_arg) context where
+    infer ctxt = infer @node_impl @context ctxt $ infer @node_arg @context ctxt
 
 instance
-    ( Inferable node context (a `And` b)
-    ) => Inferable (ElimAndLeft (a `And` b) node) context a where
-    infer ctxt = fst $ infer @node @context @(a `And` b) ctxt
+    ( Inferable node context
+    ) => Inferable (ElimAndLeft node) context where
+    infer ctxt = fst $ infer @node @context ctxt
 
 instance
-    ( Inferable node context (a `And` b)
-    ) => Inferable (ElimAndRight (a `And` b) node) context b where
-    infer ctxt = snd $ infer @node @context @(a `And` b) ctxt
+    ( Inferable node context
+    ) => Inferable (ElimAndRight node) context where
+    infer ctxt = snd $ infer @node @context ctxt
 
 instance
-    ( Inferable node_or context (a `Or` b)
-    , Inferable node_left (a ': context) c
-    , Inferable node_right (b ': context) c
-    ) => Inferable (ElimOr (a `Or` b) node_or node_left node_right) context c where
-    infer ctxt = case infer @node_or @context @(a `Or` b) ctxt of
-        Left x -> infer @node_left @(a ': context) @c (HCons x ctxt)
-        Right y -> infer @node_right @(b ': context) @c (HCons y ctxt)
+    ( Inferable node_or context
+    , Inferable node_left (a ': context)
+    , Inferable node_right (b ': context)
+    ) => Inferable (ElimOr node_or node_left node_right) context where
+    infer ctxt = case infer @node_or @context ctxt of
+        Left x -> infer @node_left @(a ': context) (HCons x ctxt)
+        Right y -> infer @node_right @(b ': context) (HCons y ctxt)
 
 
 -- === ShowType === --
-class ShowNode (node :: Node) (context :: [Type]) (conclusion :: Type) where
+class ShowNode (node :: Node conclusion) (context :: [Type]) where
     showNode :: Int -> String
 
 instance 
-    ( ShowNode node '[] conclusion
-    ) => ShowType ('(node, conclusion) :: (Node, Type)) where
-    showType = showNode @node @'[] @conclusion 0
+    ( ShowNode node '[]
+    ) => ShowType (node :: Node conclusion) where
+    showType = showNode @node @'[] 0
 
 
 -- === Unprovable === --
 instance
-    ShowNode Unprovable context conclusion where
+    ShowNode Unprovable context where
     showNode _ = "..."
 
 
 -- === Project === --
 instance {-# OVERLAPPING #-}
-    ShowNode Project (conclusion ': context) conclusion where
+    ShowNode (Project :: Node a) (a ': context) where
     showNode x = "x" ++ show x
 
 instance {-# OVERLAPPABLE #-}
-    ( ShowNode Project context conclusion
-    ) => ShowNode Project (premise ': context) conclusion where
-    showNode x = showNode @Project @context @conclusion (x - 1)
+    ( ShowNode (Project :: Node a) context
+    ) => ShowNode (Project :: Node a) (premise ': context) where
+    showNode x = showNode @(Project :: Node a) @context (x - 1)
 
 
 -- === Intro === --
-instance ShowNode IntroTrue context True where
+instance ShowNode IntroTrue context where
     showNode _ = "True"
 
 instance
-    ( ShowNode node (a ': context) b
-    ) => ShowNode (IntroImpl node) context (a -> b) where
-    showNode x = "\\x" ++ show (x + 1) ++ " -> " ++ showNode @node @(a ': context) @b (x + 1)
+    ( ShowNode node (a ': context)
+    ) => ShowNode (IntroImpl node) context where
+    showNode x = "\\x" ++ show (x + 1) ++ " -> " ++ showNode @node @(a ': context) (x + 1)
 
 instance 
-    ( ShowNode node_left context a
-    , ShowNode node_right context b
-    ) => ShowNode (IntroAnd node_left node_right) context (a `And` b) where
-    showNode x = "(" ++ showNode @node_left @context @a x ++ ", " ++ showNode @node_right @context @b x ++ ")"
+    ( ShowNode node_left context
+    , ShowNode node_right context
+    ) => ShowNode (IntroAnd node_left node_right) context where
+    showNode x = "(" ++ showNode @node_left @context x ++ ", " ++ showNode @node_right @context x ++ ")"
 
 instance
-    ( ShowNode node context a
-    ) => ShowNode (IntroOrLeft node) context (a `Or` b) where
-    showNode x = "Left (" ++ showNode @node @context @a x ++ ")"
+    ( ShowNode node context
+    ) => ShowNode (IntroOrLeft node) context where
+    showNode x = "Left (" ++ showNode @node @context x ++ ")"
 
 instance
-    ( ShowNode node context b
-    ) => ShowNode (IntroOrRight node) context (a `Or` b) where
-    showNode x = "Right (" ++ showNode @node @context @b x ++ ")"
+    ( ShowNode node context
+    ) => ShowNode (IntroOrRight node) context where
+    showNode x = "Right (" ++ showNode @node @context x ++ ")"
 
 
 -- === Elim === --
 instance
-    ( ShowNode node context False
-    ) => ShowNode (ElimFalse node) context a where
+    ( ShowNode node context
+    ) => ShowNode (ElimFalse node) context where
     showNode x = "absurd (" ++ showNode @node @context @False x ++ ")"
 
 instance
-    ( ShowNode node_impl context (a -> b)
-    , ShowNode node_arg context a
-    ) => ShowNode (ElimImpl (a -> b) node_impl node_arg) context b where
-    showNode x = showNode @node_impl @context @(a -> b) x ++ " (" ++ showNode @node_arg @context @a x ++ ")"
+    ( ShowNode node_impl context
+    , ShowNode node_arg context
+    ) => ShowNode (ElimImpl node_impl node_arg) context where
+    showNode x = showNode @node_impl @context x ++ " (" ++ showNode @node_arg @context x ++ ")"
 
 instance
-    ( ShowNode node context (a `And` b)
-    ) => ShowNode (ElimAndLeft (a `And` b) node) context a where
-    showNode x = "fst (" ++ showNode @node @context @(a `And` b) x ++ ")"
+    ( ShowNode node context
+    ) => ShowNode (ElimAndLeft node) context where
+    showNode x = "fst (" ++ showNode @node @context x ++ ")"
 
 instance
-    ( ShowNode node context (a `And` b)
-    ) => ShowNode (ElimAndRight (a `And` b) node) context b where
-    showNode x = "snd (" ++ showNode @node @context @(a `And` b) x ++ ")"
+    ( ShowNode node context
+    ) => ShowNode (ElimAndRight node) context where
+    showNode x = "snd (" ++ showNode @node @context x ++ ")"
 
 instance
-    ( ShowNode node_or context (a `Or` b)
-    , ShowNode node_left (a ': context) c
-    , ShowNode node_right (b ': context) c
-    ) => ShowNode (ElimOr (a `Or` b) node_or node_left node_right) context c where
-    showNode x = "case " ++ showNode @node_or @context @(a `Or` b) x ++ " of { " ++
-        "Left x" ++ show (x + 1) ++ " -> " ++ showNode @node_left @(a ': context) @c (x + 1) ++ "; " ++
-        "Right x" ++ show (x + 1) ++ " -> " ++ showNode @node_right @(b ': context) @c (x + 1) ++ " }"
+    ( ShowNode node_or context
+    , ShowNode node_left (a ': context)
+    , ShowNode node_right (b ': context)
+    ) => ShowNode (ElimOr node_or node_left node_right :: Node c) context where
+    showNode x = "case " ++ showNode @(node_or :: Node (a `Or` b)) @context x ++ " of { " ++
+        "Left x" ++ show (x + 1) ++ " -> " ++ showNode @node_left @(a ': context) (x + 1) ++ "; " ++
+        "Right x" ++ show (x + 1) ++ " -> " ++ showNode @node_right @(b ': context) (x + 1) ++ " }"

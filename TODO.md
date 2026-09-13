@@ -33,6 +33,10 @@
   - [ ] ShowNode with the '()
   - [ ] Add printing of goal conclusion type and intro var types
 
+- [ ] Typed Nodes
+  - [ ] Consider making elimOr nodes type a -> c
+  - [ ] Maybe add context -> type
+
 ## Testing
 
 - [ ] Make sure we don't lose computing ability because of the use of the Find flag
