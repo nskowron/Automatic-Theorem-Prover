@@ -17,6 +17,7 @@
   - [x] Think about changing Insert to :
 
 - [ ] Extend the Provable Theory
+  - [ ] FOL
 
 - [ ] Using and Comparing Heuristics
 
@@ -32,6 +33,11 @@
 - [ ] The awkward display/emit
   - [ ] ShowNode with the '()
   - [ ] Add printing of goal conclusion type and intro var types
+
+- [ ] unwrap in induction node?
+
+- [ ] FOL
+  - [ ] type instead of newtype?
 
 ## Testing
 

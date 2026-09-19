@@ -5,6 +5,8 @@ import Proposition
 
 import Data.HList ( HList(..), hHead, hTail )
 import Data.Kind ( Type )
+import Data.Type.Equality ( (:~:)(Refl) )
+import Data.Type.Nat ( Nat(..) )
 import Data.Void ( absurd )
 
 
@@ -24,6 +26,9 @@ data Node = Unprovable
     | ElimAndLeft Type Node
     | ElimAndRight Type Node
     | ElimOr Type Node Node Node
+
+    | Reflexivity
+    | Induction Node Node
 
 
 -- === Inferable === --
@@ -98,6 +103,18 @@ instance
     infer ctxt = case infer @node_or @context @(a `Or` b) ctxt of
         Left x -> infer @node_left @(a ': context) @c (HCons x ctxt)
         Right y -> infer @node_right @(b ': context) @c (HCons y ctxt)
+
+
+-- === Reflexivity === --
+instance
+    Inferable Reflexivity context (a :~: a) where
+    infer _ = Refl
+
+
+-- -- === Induction === --
+-- instance
+--     Inferable (Induction node_base node_step) context (p n) where
+--     infer ctxt = unwrap $ induction (infer @node_base @context @(p Z) ctxt) (infer @node_step @context @(forall m. f m -> f (S m))) 
 
 
 -- === ShowType === --
