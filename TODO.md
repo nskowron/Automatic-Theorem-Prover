@@ -36,8 +36,9 @@
 
 - [ ] unwrap in induction node?
 
-- [ ] FOL
-  - [ ] type instead of newtype?
+- [ ] elim quantifier node naming change
+
+- [ ] parametrized node with forall?
 
 ## Testing
 

@@ -6,15 +6,17 @@ library prover
   hs-source-dirs: src
   exposed-modules:
     Proposition
+    FOL
+    Peano
     Node
     Prover
     Inference
     Tactics
     Interactive
-    FOL
   default-extensions:
     AllowAmbiguousTypes
     DataKinds
+    QuantifiedConstraints
     TypeFamilies
     UndecidableInstances
   build-depends:

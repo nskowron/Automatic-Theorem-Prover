@@ -2,6 +2,7 @@ module Node where
 
 import Utils
 import Proposition
+import FOL
 
 import Data.HList ( HList(..), hHead, hTail )
 import Data.Kind ( Type )
@@ -28,6 +29,9 @@ data Node = Unprovable
     | ElimOr Type Node Node Node
 
     | Reflexivity
+    | ElimForall Node
+    | ElimExists a Node
+
     | Induction Node Node
 
 
@@ -105,16 +109,20 @@ instance
         Right y -> infer @node_right @(b ': context) @c (HCons y ctxt)
 
 
--- === Reflexivity === --
+-- === FOL === --
 instance
     Inferable Reflexivity context (a :~: a) where
     infer _ = Refl
 
+instance
+    ( forall (x :: a). Inferable node context (p x)
+    ) => Inferable (ElimForall node) context (Forall a p) where
+    infer ctxt = Forall $ infer @node @context ctxt
 
--- -- === Induction === --
--- instance
---     Inferable (Induction node_base node_step) context (p n) where
---     infer ctxt = unwrap $ induction (infer @node_base @context @(p Z) ctxt) (infer @node_step @context @(forall m. f m -> f (S m))) 
+instance
+    ( Inferable node context (p x)
+    ) => Inferable (ElimExists x node) context (Exists a p) where
+    infer ctxt = Exists $ infer @node @context @(p x) ctxt
 
 
 -- === ShowType === --
