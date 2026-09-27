@@ -2,9 +2,13 @@ module FOL where
 
 import Proposition
 
-import Data.Kind (Type)
-import Data.Proxy (Proxy(..))
-import Data.Type.Equality ((:~:)(Refl))
+import Data.Kind ( Type )
+import Data.Type.Equality ( (:~:)(..) )
+
+
+-- === Equals === --
+type family n :=: m where
+    n :=: m = n :~: m
 
 
 -- === Quantifiers === --

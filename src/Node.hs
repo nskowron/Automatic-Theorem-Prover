@@ -6,33 +6,34 @@ import FOL
 
 import Data.HList ( HList(..), hHead, hTail )
 import Data.Kind ( Type )
-import Data.Type.Equality ( (:~:)(Refl) )
+import Data.Type.Equality ( (:~:)(..) )
 import Data.Type.Nat ( Nat(..) )
 import Data.Void ( absurd )
 
 
 -- === Node === --
-data Node = Unprovable
+data Node where
+    Unprovable :: Node
 
-    | Project
+    Project :: Node
 
-    | IntroTrue
-    | IntroImpl Node
-    | IntroAnd Node Node
-    | IntroOrLeft Node
-    | IntroOrRight Node
+    IntroTrue :: Node
+    IntroImpl :: Node -> Node
+    IntroAnd :: Node -> Node -> Node
+    IntroOrLeft :: Node -> Node
+    IntroOrRight :: Node -> Node
 
-    | ElimFalse Node
-    | ElimImpl Type Node Node
-    | ElimAndLeft Type Node
-    | ElimAndRight Type Node
-    | ElimOr Type Node Node Node
+    ElimFalse :: Node -> Node
+    ElimImpl :: a -> Node -> Node -> Node
+    ElimAndLeft :: a -> Node -> Node
+    ElimAndRight :: a -> Node -> Node
+    ElimOr :: a -> Node -> Node -> Node -> Node
 
-    | Reflexivity
-    | ElimForall Node
-    | ElimExists a Node
+    Reflexivity :: Node
+    IntroForall :: Node -> Node
+    IntroExists :: a -> Node -> Node
 
-    | Induction Node Node
+    Induction :: Node -> Node -> Node
 
 
 -- === Inferable === --
@@ -116,13 +117,22 @@ instance
 
 instance
     ( forall (x :: a). Inferable node context (p x)
-    ) => Inferable (ElimForall node) context (Forall a p) where
+    ) => Inferable (IntroForall node) context (Forall a p) where
     infer ctxt = Forall $ infer @node @context ctxt
 
 instance
-    ( Inferable node context (p x)
-    ) => Inferable (ElimExists x node) context (Exists a p) where
+    ( Predicate p
+    , Inferable node context (p x)
+    ) => Inferable (IntroExists (x :: a) node) context (Exists a p) where
     infer ctxt = Exists $ infer @node @context @(p x) ctxt
+
+
+-- === Predicate === --
+instance {-# OVERLAPPABLE #-}
+    ( Predicate p
+    , Inferable node context (Unwrapped p x)
+    ) => Inferable node context (p x) where
+    infer ctxt = wrap $ infer @node @context ctxt
 
 
 -- === ShowType === --

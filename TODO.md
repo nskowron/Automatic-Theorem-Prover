@@ -6,6 +6,7 @@
   - [x] Elim False rule
   - [ ] Think of passing the type into Project Node
     - can show (not infer) without passing the type
+    - cannot even if we parametrized Node
 
 - [ ] Interactive Proving
   - [x] Using Monads
@@ -17,7 +18,7 @@
   - [x] Think about changing Insert to :
 
 - [ ] Extend the Provable Theory
-  - [ ] FOL
+  - [x] FOL
 
 - [ ] Using and Comparing Heuristics
 
@@ -36,9 +37,9 @@
 
 - [ ] unwrap in induction node?
 
-- [ ] elim quantifier node naming change
+- [x] elim quantifier node naming change
 
-- [ ] parametrized node with forall?
+- [x] parametrized node with forall?
 
 ## Testing
 
@@ -46,5 +47,7 @@
   - [ ] Generally prove correctness
 
 - [ ] "Interactive" tests
+
+- [ ] FOL tests
 
 ## Debugging

@@ -16,11 +16,6 @@ type family (n :: Nat) :*: (m :: Nat) where
     (S n) :*: m = m :+: (n :*: m)
 
 
--- === Prettier Equals === --
-type family (n :: Nat) :=: (m :: Nat) where
-    n :=: m = n :~: m
-
-
 -- === Experiments === --
 
 class Inducible (n :: Nat) where
