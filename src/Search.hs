@@ -1,6 +1,7 @@
 module Search where
 
 import Proposition
+import FOL
 import Utils
 import Node
 
@@ -70,6 +71,23 @@ type family TryIntro (context :: [Type]) (conclusion :: Type) (parents :: [([Typ
             :<$>: MakeNode Search context a parents)
         :<|>: (IntroOrRight
             :<$>: MakeNode Search context b parents)
+
+    TryIntro context (a :=: a) parents =
+        Just Reflexivity
+
+    TryIntro context (Predicate p x) parents =
+        IntroPred
+            :<$>: MakeNode Search context (Eval p x) parents
+
+    -- TryIntro context (Forall a p) parents =
+    --     IntroForall
+    --         :<$>: MakeNode Search context (Predicate p )
+
+    TryIntro context (Exists Type p) parents =
+        (IntroExists True
+            :<$>: MakeNode Search context (Predicate p True) parents)
+        :<|>: (IntroExists False
+            :<$>: MakeNode Search context (Predicate p False) parents)
 
     TryIntro _ _ _ = Nothing
 

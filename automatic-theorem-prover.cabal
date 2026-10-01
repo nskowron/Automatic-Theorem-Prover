@@ -12,6 +12,7 @@ library prover
     Prover
     Inference
     Tactics
+    Search
     Interactive
   default-extensions:
     AllowAmbiguousTypes
@@ -32,6 +33,8 @@ library test
   hs-source-dirs: test
   exposed-modules:
     AutomaticTests
+  default-extensions:
+    TypeFamilies
   build-depends:
     base,
     prover

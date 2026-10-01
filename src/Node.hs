@@ -30,6 +30,7 @@ data Node where
     ElimOr :: a -> Node -> Node -> Node -> Node
 
     Reflexivity :: Node
+    IntroPred :: Node -> Node
     IntroForall :: Node -> Node
     IntroExists :: a -> Node -> Node
 
@@ -116,23 +117,19 @@ instance
     infer _ = Refl
 
 instance
-    ( forall (x :: a). Inferable node context (p x)
+    ( Inferable node context (Eval p x)
+    ) => Inferable (IntroPred node) context (Predicate p x) where
+    infer ctxt = Predicate $ infer @node @context @(Eval p x) ctxt
+
+instance
+    ( forall (x :: a). Inferable node context (Predicate p x)
     ) => Inferable (IntroForall node) context (Forall a p) where
     infer ctxt = Forall $ infer @node @context ctxt
 
 instance
-    ( Predicate p
-    , Inferable node context (p x)
+    ( Inferable node context (Predicate p x)
     ) => Inferable (IntroExists (x :: a) node) context (Exists a p) where
-    infer ctxt = Exists $ infer @node @context @(p x) ctxt
-
-
--- === Predicate === --
-instance {-# OVERLAPPABLE #-}
-    ( Predicate p
-    , Inferable node context (Unwrapped p x)
-    ) => Inferable node context (p x) where
-    infer ctxt = wrap $ infer @node @context ctxt
+    infer ctxt = Exists $ infer @node @context @(Predicate p x) ctxt
 
 
 -- === ShowType === --
@@ -218,3 +215,24 @@ instance
     showNode x = "case " ++ showNode @node_or @context @(a `Or` b) x ++ " of { " ++
         "Left x" ++ show (x + 1) ++ " -> " ++ showNode @node_left @(a ': context) @c (x + 1) ++ "; " ++
         "Right x" ++ show (x + 1) ++ " -> " ++ showNode @node_right @(b ': context) @c (x + 1) ++ " }"
+
+
+-- === FOL === --
+instance
+    ShowNode Reflexivity context (a :~: a) where
+    showNode _ = "Refl"
+
+instance
+    ( ShowNode node context (Eval p x)
+    ) => ShowNode (IntroPred node) context (Predicate p x) where
+    showNode x = "Predicate (" ++ showNode @node @context @(Eval p x) x ++ ")"
+
+-- instance
+--     ( forall (x :: a). Inferable node context (Predicate p x)
+--     ) => Inferable (IntroForall node) context (Forall a p) where
+--     infer ctxt = Forall $ infer @node @context ctxt
+
+instance
+    ( ShowNode node context (Predicate p x)
+    ) => ShowNode (IntroExists (x :: a) node) context (Exists a p) where
+    showNode x = "Exists (" ++ showNode @node @context @(Predicate p x) x ++ ")"

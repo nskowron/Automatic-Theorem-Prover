@@ -7,21 +7,19 @@ import Data.Type.Equality ( (:~:)(..) )
 
 
 -- === Equals === --
-type family n :=: m where
-    n :=: m = n :~: m
+type n :=: m = n :~: m
+
+
+-- === Predicate === --
+data Predicate p x where
+    Predicate :: Eval p x -> Predicate p x
+
+type family Eval p (x :: a)
 
 
 -- === Quantifiers === --
 data Forall a p where
-    Forall :: (forall (x :: a). p x) -> Forall a p
+    Forall :: (forall (x :: a). Predicate p x) -> Forall a p
 
 data Exists a p where
-    Exists :: forall a (x :: a) (p :: a -> Type). p x -> Exists a p
-
-
--- === Predicate === --
-class Predicate (p :: a -> Type) where
-    type Unwrapped p (x :: a)
-    wrap :: Unwrapped p x -> p x
-    unwrap :: p x -> Unwrapped p x
-    mapWrap :: (Unwrapped p x -> Unwrapped p y) -> (p x -> p y)
+    Exists :: forall a (x :: a) p. Predicate p x -> Exists a p

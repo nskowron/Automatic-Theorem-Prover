@@ -12,7 +12,7 @@ import Language.Haskell.DoNotation
 import Prelude hiding ( (>>=), (>>) )
 
 
--- === Prooving Using the Search Engine === --
+-- === Proving Using the Search Engine === --
 
 -- define a proposition (a type)
 type T1 = (False -> True)

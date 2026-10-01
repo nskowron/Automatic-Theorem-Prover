@@ -1,9 +1,13 @@
 module AutomaticTests where
 
 import Proposition
+import FOL
 import Prover
 
+import Data.Kind ( Type )
 
+
+-- === Propositional Logic === --
 _ = prove @True
 _ = prove @(True -> True)
 _ = prove @(A -> True)
@@ -49,3 +53,17 @@ _ = prove @(Not (A `And` False))
 
 _ = prove @((A `Or` B) -> (A -> C) -> (B -> C) -> C)
 _ = prove @((A -> C) -> (B -> C) -> (A `Or` B) -> C)
+
+
+-- === First-Order Logic === --
+data Id
+type instance Eval Id x = x
+_ = prove @(Exists Type Id)
+
+data NotA
+type instance Eval NotA a = Not a
+_ = prove @(Exists Type NotA)
+
+data P
+_ = prove @(Predicate P True -> Exists Type P)
+_ = prove @(Exists Type P -> Exists Type P)
