@@ -1,5 +1,9 @@
 module Utils where
 
+import Proposition
+
+import Data.Type.Nat ( Nat(..) )
+
 
 -- === Utils === --
 type family Member a l where
@@ -9,7 +13,10 @@ type family Member a l where
 
 type family If p a b where
     If True a _ = a
-    If False _ b = b
+    If (True `And` True) a _ = a
+    If (True `Or` _) a _ = a
+    If (_ `Or` True) a _ = a
+    If false _ b = b
 
 type family FromMaybe d a where
     FromMaybe d Nothing = d
@@ -19,6 +26,11 @@ type family Insert e l where
     Insert e '[] = '[e]
     Insert e (e ': l) = e ': l
     Insert e (l ': ls) = l ': Insert e ls
+
+type family IsNat a where
+    IsNat Z = True
+    IsNat (S n) = True
+    IsNat a = False
 
 
 -- === Instantiable === --

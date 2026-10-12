@@ -1,5 +1,6 @@
 module Node where
 
+import Eval
 import Utils
 import Proposition
 import FOL
@@ -117,19 +118,14 @@ instance
     infer _ = Refl
 
 instance
-    ( Inferable node context (Eval p x)
-    ) => Inferable (IntroPred node) context (Predicate p x) where
-    infer ctxt = Predicate $ infer @node @context @(Eval p x) ctxt
-
-instance
-    ( forall (x :: a). Inferable node context (Predicate p x)
-    ) => Inferable (IntroForall node) context (Forall a p) where
+    ( forall (v :: a). Inferable node context (Eval p x v)
+    ) => Inferable (IntroForall node) context (Forall x a p) where
     infer ctxt = Forall $ infer @node @context ctxt
 
 instance
-    ( Inferable node context (Predicate p x)
-    ) => Inferable (IntroExists (x :: a) node) context (Exists a p) where
-    infer ctxt = Exists $ infer @node @context @(Predicate p x) ctxt
+    ( Inferable node context (Eval p x v)
+    ) => Inferable (IntroExists (v :: a) node) context (Exists x a p) where
+    infer ctxt = Exists $ infer @node @context @(Eval p x v) ctxt
 
 
 -- === ShowType === --
@@ -223,16 +219,11 @@ instance
     showNode _ = "Refl"
 
 instance
-    ( ShowNode node context (Eval p x)
-    ) => ShowNode (IntroPred node) context (Predicate p x) where
-    showNode x = "Predicate (" ++ showNode @node @context @(Eval p x) x ++ ")"
-
--- instance
---     ( forall (x :: a). Inferable node context (Predicate p x)
---     ) => Inferable (IntroForall node) context (Forall a p) where
---     infer ctxt = Forall $ infer @node @context ctxt
+    ( forall (v :: a). ShowNode node context (Eval p x v)
+    ) => ShowNode (IntroForall node) context (Forall x a p) where
+    showNode x = "Forall (" ++ showNode @node @context x ++ ")"
 
 instance
-    ( ShowNode node context (Predicate p x)
-    ) => ShowNode (IntroExists (x :: a) node) context (Exists a p) where
-    showNode x = "Exists (" ++ showNode @node @context @(Predicate p x) x ++ ")"
+    ( ShowNode node context (Eval p x v)
+    ) => ShowNode (IntroExists (v :: a) node) context (Exists x a p) where
+    showNode x = "Exists (" ++ showNode @node @context @(Eval p x v) x ++ ")"

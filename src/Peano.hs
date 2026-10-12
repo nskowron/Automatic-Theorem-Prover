@@ -1,32 +1,21 @@
 module Peano where
 
-import FOL
+-- import FOL
 
 import Data.Type.Nat ( Nat(..) )
 import Data.Type.Equality ( (:~:)(..) )
 
 
--- === Arithmetics === --
-type family (n :: Nat) :+: (m :: Nat) where
-    Z :+: m = m
-    (S n) :+: m = S (n :+: m)
-
-type family (n :: Nat) :*: (m :: Nat) where
-    Z :*: m = Z
-    (S n) :*: m = m :+: (n :*: m)
+-- === Declarations === --
+data a :+: b
+data a :*: b
 
 
--- === Experiments === --
-class Inducible (n :: Nat) where
-    induction
-        :: f Z
-        -> (forall m. f m -> f (S m))
-        -> f n
+-- === Definitions === --
+type family Eval p where
 
-instance Inducible Z where
-    induction base _ = base
+    Eval (Z :+: b) = b
+    Eval (S a :+: b) = S (Eval (a :+: b))
 
-instance
-    ( Inducible n
-    ) => Inducible (S n) where
-    induction base step = step (induction base step)
+    Eval (Z :*: b) = Z
+    Eval (S a :*: b) = Eval (Eval (a :*: b) :+: b)
