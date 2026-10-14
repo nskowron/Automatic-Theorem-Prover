@@ -41,6 +41,8 @@
 
 - [x] parametrized node with forall?
 
+- [ ] rename WA to Predicate and pass to both quantifiers
+
 ## Testing
 
 - [ ] Make sure we don't lose computing ability because of the use of the Find flag

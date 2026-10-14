@@ -1,3 +1,3 @@
 module Eval where
 
-type family Eval p x (v :: a)
+type family Eval a :: p

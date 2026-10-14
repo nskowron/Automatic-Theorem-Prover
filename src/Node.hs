@@ -7,6 +7,7 @@ import FOL
 
 import Data.HList ( HList(..), hHead, hTail )
 import Data.Kind ( Type )
+import Data.Proxy ( Proxy(..) )
 import Data.Type.Equality ( (:~:)(..) )
 import Data.Type.Nat ( Nat(..) )
 import Data.Void ( absurd )
@@ -118,14 +119,19 @@ instance
     infer _ = Refl
 
 instance
-    ( forall (v :: a). Inferable node context (Eval p x v)
-    ) => Inferable (IntroForall node) context (Forall x a p) where
-    infer ctxt = Forall $ infer @node @context ctxt
+    ( Inferable node context (Eval (Apply p x (Lit v)))
+    ) => Inferable (IntroPred node) context (Predicate p x v) where
+    infer ctxt = Predicate $ infer @node @context @(Eval (Apply p x (Lit v))) ctxt
 
 instance
-    ( Inferable node context (Eval p x v)
+    ( forall (v :: a). Inferable (IntroPred node) context (Predicate p x v)
+    ) => Inferable (IntroForall node) context (Forall x a p) where
+    infer ctxt = Forall $ infer @(IntroPred node) @context ctxt
+
+instance
+    ( Inferable (IntroPred node) context (Predicate p x v)
     ) => Inferable (IntroExists (v :: a) node) context (Exists x a p) where
-    infer ctxt = Exists $ infer @node @context @(Eval p x v) ctxt
+    infer ctxt = Exists $ infer @(IntroPred node) @context @(Predicate p x v) ctxt
 
 
 -- === ShowType === --
@@ -218,10 +224,10 @@ instance
     ShowNode Reflexivity context (a :~: a) where
     showNode _ = "Refl"
 
-instance
-    ( forall (v :: a). ShowNode node context (Eval p x v)
-    ) => ShowNode (IntroForall node) context (Forall x a p) where
-    showNode x = "Forall (" ++ showNode @node @context x ++ ")"
+-- instance
+--     ( forall (v :: a). ShowNode node context (Eval p x v)
+--     ) => ShowNode (IntroForall node) context (Forall x a p) where
+--     showNode x = "Forall (" ++ showNode @node @context x ++ ")"
 
 instance
     ( ShowNode node context (Eval p x v)

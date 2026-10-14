@@ -5,6 +5,7 @@ import FOL
 import Prover
 
 import Data.Kind ( Type )
+import GHC.TypeLits ( Symbol )
 
 
 -- === Propositional Logic === --
@@ -56,14 +57,8 @@ _ = prove @((A -> C) -> (B -> C) -> (A `Or` B) -> C)
 
 
 -- === First-Order Logic === --
-data Id
-type instance Eval Id x = x
-_ = prove @(Exists Type Id)
-
-data NotA
-type instance Eval NotA a = Not a
-_ = prove @(Exists Type NotA)
+_ = prove @(Exists "x" Type ("x" -> "x"))
+_ = prove @(Exists "x" Type (Not "x"))
 
 data P
-_ = prove @(Predicate P True -> Exists Type P)
-_ = prove @(Exists Type P -> Exists Type P)
+_ = prove @(Exists "x" Type P -> Exists "y" Type P)

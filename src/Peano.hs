@@ -1,9 +1,8 @@
 module Peano where
 
--- import FOL
+import Eval
 
 import Data.Type.Nat ( Nat(..) )
-import Data.Type.Equality ( (:~:)(..) )
 
 
 -- === Declarations === --
@@ -12,10 +11,8 @@ data a :*: b
 
 
 -- === Definitions === --
-type family Eval p where
+type instance Eval (Z :+: b) = b
+type instance Eval (S a :+: b) = S (Eval (a :+: b))
 
-    Eval (Z :+: b) = b
-    Eval (S a :+: b) = S (Eval (a :+: b))
-
-    Eval (Z :*: b) = Z
-    Eval (S a :*: b) = Eval (Eval (a :*: b) :+: b)
+type instance Eval (Z :*: b) = Z
+-- type instance Eval (S a :*: Z) = Eval (Eval (a :*: Z) :+: Z)

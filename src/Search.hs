@@ -1,38 +1,18 @@
 module Search where
 
-import Eval
 import Proposition
 import FOL
-import Peano
-import qualified Peano ( Eval )
 import Utils
 import Node
 
 import Data.Kind ( Type )
 
 
--- === Eval === --
-type instance Eval (a -> b) x v = Eval a x v -> Eval b x v
-type instance Eval (a `And` b) x v = Eval a x v `And` Eval b x v
-type instance Eval (a `Or` b) x v = Eval a x v `Or` Eval b x v
-
-type instance Eval (a :=: b) x v = Eval a x v :=: Eval b x v
-type instance Eval (Forall x b q) x v = Forall x b q -- allow variable shadowing
-type instance Eval (Forall y b q) x v = Forall y b (Eval q x v)
-type instance Eval (Exists x b q) x v = Exists x b q -- allow variable shadowing
-type instance Eval (Exists y b q) x v = Exists y b (Eval q x v)
-
-type instance Eval (a :+: b) x v = TryPeanoEval (Eval a x v) (:+:) (Eval b x v)
-type instance Eval (a :*: b) x v = TryPeanoEval (Eval a x v) (:*:) (Eval b x v)
-
-type instance Eval x x v = v
-type instance Eval y x v = y
-
-type family TryPeanoEval a op b where
-    TryPeanoEval a op b =
-        If (IsNat a `And` IsNat b)
-            Peano.Eval (op a b)
-            (op a b)
+-- -- === Argument === --
+-- data Argument where
+--     Lit :: Nat -> Argument
+--     Var :: Symbol -> Argument
+--     Op :: a -> Argument
 
 
 -- === Flag === --
@@ -102,19 +82,19 @@ type family TryIntro (context :: [Type]) (conclusion :: Type) (parents :: [([Typ
     TryIntro context (a :=: a) parents =
         Just Reflexivity
 
-    TryIntro context (Predicate p x) parents =
-        IntroPred
-            :<$>: MakeNode Search context (Eval p x) parents
+    -- TryIntro context (Predicate p x) parents =
+    --     IntroPred
+    --         :<$>: MakeNode Search context (Eval p x) parents
 
     -- TryIntro context (Forall a p) parents =
     --     IntroForall
     --         :<$>: MakeNode Search context (Predicate p )
 
-    TryIntro context (Exists Type p) parents =
-        (IntroExists True
-            :<$>: MakeNode Search context (Predicate p True) parents)
-        :<|>: (IntroExists False
-            :<$>: MakeNode Search context (Predicate p False) parents)
+    -- TryIntro context (Exists Type p) parents =
+    --     (IntroExists True
+    --         :<$>: MakeNode Search context (Predicate p True) parents)
+    --     :<|>: (IntroExists False
+    --         :<$>: MakeNode Search context (Predicate p False) parents)
 
     TryIntro _ _ _ = Nothing
 
