@@ -1,13 +1,7 @@
 module Examples where
 
 import Proposition
-import Inference
-import Tactics
-import Interactive
 import Prover
-
-import Control.Monad.Indexed
-import Language.Haskell.DoNotation
 
 import Prelude hiding ( (>>=), (>>) )
 
@@ -45,21 +39,3 @@ type T3 = True -> (A -> B)
 -- No instance for ‘Inferable Unprovable '[] (True -> A -> B)’
 -- [...]
 -------------------------------------------------------------------------------------
-
-
--- === Proving ivb style === --
-i1 :: T1
-i1 = Interactive.prove $ do
-    intro
-    qed
-
-i2 :: (A -> B -> (A `And` B))
-i2 = Interactive.prove $ do
-    a <- intro
-    b <- intro
-    exact $ introAnd a b
-
-i3 :: (False -> False)
-i3 = Interactive.prove $ do
-    f <- intro
-    exact f

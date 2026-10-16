@@ -10,10 +10,7 @@ library prover
     Peano
     Node
     Prover
-    Inference
-    Tactics
     Search
-    Interactive
   default-extensions:
     AllowAmbiguousTypes
     DataKinds
@@ -22,7 +19,6 @@ library prover
     UndecidableInstances
   build-depends:
     base,
-    indexed,
     data-debruijn,
     HList
   ghc-options:
@@ -35,7 +31,6 @@ library test
     AutomaticTests
   default-extensions:
     DataKinds
-    TypeFamilies
   build-depends:
     base,
     prover
@@ -45,11 +40,7 @@ library examples
   hs-source-dirs: examples
   exposed-modules:
     Examples
-  default-extensions:
-    RebindableSyntax
   build-depends:
     base,
-    indexed,
-    do-notation,
     prover
   default-language: GHC2021
