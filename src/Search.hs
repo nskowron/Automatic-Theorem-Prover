@@ -6,13 +6,12 @@ import Utils
 import Node
 
 import Data.Kind ( Type )
+import GHC.TypeLits ( Symbol )
 
 
--- -- === Argument === --
--- data Argument where
---     Lit :: Nat -> Argument
---     Var :: Symbol -> Argument
---     Op :: a -> Argument
+-- === Variables === --
+data All (x :: Symbol)
+data Any (x :: Symbol)
 
 
 -- === Flag === --

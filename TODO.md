@@ -41,7 +41,9 @@
 
 - [x] parametrized node with forall?
 
-- [ ] rename WA to Predicate and pass to both quantifiers
+- [x] rename WA to Predicate and pass to both quantifiers
+
+- [ ] unify kind expectations
 
 ## Testing
 

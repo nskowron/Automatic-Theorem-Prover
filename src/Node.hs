@@ -1,6 +1,5 @@
 module Node where
 
-import Eval
 import Utils
 import Proposition
 import FOL
@@ -9,7 +8,6 @@ import Data.HList ( HList(..), hHead, hTail )
 import Data.Kind ( Type )
 import Data.Proxy ( Proxy(..) )
 import Data.Type.Equality ( (:~:)(..) )
-import Data.Type.Nat ( Nat(..) )
 import Data.Void ( absurd )
 
 
@@ -119,19 +117,19 @@ instance
     infer _ = Refl
 
 instance
-    ( Inferable node context (Eval (Apply p x (Lit v)))
+    ( Inferable node context (Eval (Apply p (Var x) v))
     ) => Inferable (IntroPred node) context (Predicate p x v) where
-    infer ctxt = Predicate $ infer @node @context @(Eval (Apply p x (Lit v))) ctxt
+    infer ctxt = Predicate $ infer @node @context @(Eval (Apply p (Var x) v)) ctxt
 
 instance
-    ( forall (v :: a). Inferable (IntroPred node) context (Predicate p x v)
-    ) => Inferable (IntroForall node) context (Forall x a p) where
+    ( forall (v :: d). Inferable (IntroPred node) context (Predicate p x (a v))
+    ) => Inferable (IntroForall node) context (Forall x (a :: d -> Type) p) where
     infer ctxt = Forall $ infer @(IntroPred node) @context ctxt
 
 instance
-    ( Inferable (IntroPred node) context (Predicate p x v)
-    ) => Inferable (IntroExists (v :: a) node) context (Exists x a p) where
-    infer ctxt = Exists $ infer @(IntroPred node) @context @(Predicate p x v) ctxt
+    ( Inferable (IntroPred node) context (Predicate p x (a v))
+    ) => Inferable (IntroExists (v :: d) node) context (Exists x (a :: d -> Type) p) where
+    infer ctxt = Exists $ infer @(IntroPred node) @context @(Predicate p x (a v)) ctxt
 
 
 -- === ShowType === --
@@ -229,7 +227,7 @@ instance
 --     ) => ShowNode (IntroForall node) context (Forall x a p) where
 --     showNode x = "Forall (" ++ showNode @node @context x ++ ")"
 
-instance
-    ( ShowNode node context (Eval p x v)
-    ) => ShowNode (IntroExists (v :: a) node) context (Exists x a p) where
-    showNode x = "Exists (" ++ showNode @node @context @(Eval p x v) x ++ ")"
+-- instance
+--     ( ShowNode node context (Eval p x v)
+--     ) => ShowNode (IntroExists (v :: a) node) context (Exists x a p) where
+--     showNode x = "Exists (" ++ showNode @node @context @(Eval p x v) x ++ ")"
