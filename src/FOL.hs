@@ -55,5 +55,16 @@ type family Apply p x v where
 -- === Eval === --
 type family Eval p where
 
+    Eval (a -> b) = Eval a -> Eval b
+    Eval (a `And` b) = Eval a `And` Eval b
+    Eval (a `Or` b) = Eval a `Or` Eval b
+
+    Eval (a :=: b) = Eval a :=: Eval b
+
+    Eval (Forall x a p) = Forall x a (Eval p)
+    Eval (Exists x a p) = Exists x a (Eval p)
+
     Eval (a :+: b) = Peano.Eval (a :+: b)
     Eval (a :*: b) = Peano.Eval (a :*: b)
+
+    Eval p = p

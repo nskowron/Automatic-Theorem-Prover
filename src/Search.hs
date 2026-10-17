@@ -10,8 +10,8 @@ import GHC.TypeLits ( Symbol )
 
 
 -- === Variables === --
-data All (x :: Symbol)
-data Any (x :: Symbol)
+data All (x :: Symbol) (a :: d -> Type)
+data Any (x :: Symbol) (a :: d -> Type)
 
 
 -- === Flag === --
@@ -81,13 +81,9 @@ type family TryIntro (context :: [Type]) (conclusion :: Type) (parents :: [([Typ
     TryIntro context (a :=: a) parents =
         Just Reflexivity
 
-    -- TryIntro context (Predicate p x) parents =
-    --     IntroPred
-    --         :<$>: MakeNode Search context (Eval p x) parents
-
-    -- TryIntro context (Forall a p) parents =
-    --     IntroForall
-    --         :<$>: MakeNode Search context (Predicate p )
+    TryIntro context (Forall x a p) parents =
+        IntroForall
+            :<$>: MakeNode Search context (Eval (Apply p (Var x) (All x a))) parents
 
     -- TryIntro context (Exists Type p) parents =
     --     (IntroExists True
