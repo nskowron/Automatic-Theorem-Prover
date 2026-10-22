@@ -7,13 +7,14 @@ library prover
   exposed-modules:
     Proposition
     FOL
-    Peano
+    ACFp
     Node
     Prover
     Search
   default-extensions:
     AllowAmbiguousTypes
     DataKinds
+    NoStarIsType
     QuantifiedConstraints
     TypeFamilies
     UndecidableInstances

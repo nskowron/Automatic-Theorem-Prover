@@ -1,7 +1,7 @@
 module AutomaticTests where
 
 import Proposition
-import Peano
+import ACFp
 import FOL
 import Prover
 
@@ -58,4 +58,4 @@ _ = prove @((A -> C) -> (B -> C) -> (A `Or` B) -> C)
 
 
 -- === First-Order Logic === --
-_ = prove @(Forall "x" Nat (Var "x" :=: Var "x"))
+_ = prove @(Forall "x" (F 5) (Var "x" :=: Var "x"))

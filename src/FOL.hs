@@ -3,8 +3,8 @@ module FOL where
 import Utils
 import Proposition
 
-import Peano ( Nat, (:+:), (:*:) )
-import qualified Peano ( Eval )
+import ACFp ( F, (:+:), (:-:), (:*:), (:/:), (:^:) )
+import qualified ACFp ( Eval )
 
 import Data.Kind ( Type )
 import Data.Type.Equality ( (:~:)(..) )
@@ -46,7 +46,10 @@ type family Apply p x v where
     Apply (Exists y b q) x v = Exists y b (Apply q x v)
 
     Apply (a :+: b) x v = Apply a x v :+: Apply b x v
+    Apply (a :-: b) x v = Apply a x v :-: Apply b x v
     Apply (a :*: b) x v = Apply a x v :*: Apply b x v
+    Apply (a :/: b) x v = Apply a x v :/: Apply b x v
+    Apply (a :^: b) x v = Apply a x v :^: Apply b x v
 
     Apply x x v = v
     Apply y x v = y
@@ -64,7 +67,4 @@ type family Eval p where
     Eval (Forall x a p) = Forall x a (Eval p)
     Eval (Exists x a p) = Exists x a (Eval p)
 
-    Eval (a :+: b) = Peano.Eval (a :+: b)
-    Eval (a :*: b) = Peano.Eval (a :*: b)
-
-    Eval p = p
+    Eval p = ACFp.Eval p
