@@ -16,8 +16,8 @@ class Provable a where
 
 instance 
     ( tree ~ FromMaybe Unprovable (MakeNode Search '[] proposition '[])
-    , Inferable tree '[] proposition
+    , Inferable tree '[] '[] proposition
     -- , ShowType '(tree, proposition)
     ) => Provable proposition where
-    prove = infer @tree @'[] @proposition HNil
+    prove = infer @tree @'[] @'[] @proposition HNil
     -- emit = putStrLn $ showType @'(tree, proposition)

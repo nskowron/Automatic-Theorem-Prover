@@ -59,3 +59,4 @@ _ = prove @((A -> C) -> (B -> C) -> (A `Or` B) -> C)
 
 -- === First-Order Logic === --
 _ = prove @(Forall "x" (F 5) (Var "x" :=: Var "x"))
+_ = prove @(Forall "a" (F 7) (Forall "b" (F 7) (Forall "c" (F 7) (((Var "a" :=: Var "c") `And` (Var "b" :=: Var "c")) -> (Var "a" :=: Var "b")))))

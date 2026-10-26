@@ -21,7 +21,7 @@ type n :=: m = n :~: m
 
 -- === Quantifiers === --
 data Predicate p x v where
-    Predicate :: Eval (Apply p (Var x) v) -> Predicate p x v
+    Predicate :: Eval (Apply p '[ '(x, v)]) -> Predicate p x v
 
 data Forall (x :: Symbol) (a :: d -> Type) (p :: Type) where
     Forall :: (forall (v :: d). Predicate p x (a v)) -> Forall x a p
@@ -31,28 +31,26 @@ data Exists (x :: Symbol) (a :: d -> Type) (p :: Type) where
 
 
 -- === Apply === --
-type family Apply p x v where
+type family Apply p env where
 
-    Apply (a -> b) x v = Apply a x v -> Apply b x v
-    Apply (a `And` b) x v = Apply a x v `And` Apply b x v
-    Apply (a `Or` b) x v = Apply a x v `Or` Apply b x v
+    Apply (a -> b) env = Apply a env -> Apply b env
+    Apply (a `And` b) env = Apply a env `And` Apply b env
+    Apply (a `Or` b) env = Apply a env `Or` Apply b env
 
-    Apply (a :=: b) x v = Apply a x v :=: Apply b x v
+    Apply (a :=: b) env = Apply a env :=: Apply b env
 
-    Apply (Forall x b q) (Var x) v = Forall x b q -- allow variable shadowing
-    Apply (Forall y b q) x v = Forall y b (Apply q x v)
-    
-    Apply (Exists x b q) (Var x) v = Exists x b q -- allow variable shadowing
-    Apply (Exists y b q) x v = Exists y b (Apply q x v)
+    Apply (Forall x a p) env = Forall x a (Apply p ('(x, Var x) ': env))
+    Apply (Exists x a p) env = Exists x a (Apply p ('(x, Var x) ': env))
 
-    Apply (a :+: b) x v = Apply a x v :+: Apply b x v
-    Apply (a :-: b) x v = Apply a x v :-: Apply b x v
-    Apply (a :*: b) x v = Apply a x v :*: Apply b x v
-    Apply (a :/: b) x v = Apply a x v :/: Apply b x v
-    Apply (a :^: b) x v = Apply a x v :^: Apply b x v
+    Apply (a :+: b) env = Apply a env :+: Apply b env
+    Apply (a :-: b) env = Apply a env :-: Apply b env
+    Apply (a :*: b) env = Apply a env :*: Apply b env
+    Apply (a :/: b) env = Apply a env :/: Apply b env
+    Apply (a :^: b) env = Apply a env :^: Apply b env
 
-    Apply x x v = v
-    Apply y x v = y
+    Apply (Var x) env = LookUp x env
+
+    Apply p env = p
 
 
 -- === Eval === --

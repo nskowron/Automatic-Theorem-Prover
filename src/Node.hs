@@ -9,6 +9,7 @@ import Data.Kind ( Type )
 import Data.Proxy ( Proxy(..) )
 import Data.Type.Equality ( (:~:)(..) )
 import Data.Void ( absurd )
+import GHC.TypeLits ( Symbol )
 
 
 -- === Node === --
@@ -30,6 +31,8 @@ data Node where
     ElimOr :: a -> Node -> Node -> Node -> Node
 
     Reflexivity :: Node
+    Transitivity :: a -> Node -> Node -> Node
+
     IntroPred :: Node -> Node
     IntroForall :: Node -> Node
     IntroExists :: a -> Node -> Node
@@ -38,98 +41,111 @@ data Node where
 
 
 -- === Inferable === --
-class Inferable (node :: Node) (context :: [Type]) (conclusion :: Type) where
+class Inferable (node :: Node) (context :: [Type]) (env :: [(Symbol, Type)]) (conclusion :: Type) where
     infer :: HList context -> conclusion
 
 
 -- === Project === --
 instance {-# OVERLAPPING #-}
-    Inferable Project (conclusion ': context) conclusion where
+    Inferable Project (conclusion ': context) env conclusion where
     infer = hHead
 
 instance {-# OVERLAPPABLE #-}
-    ( Inferable Project context conclusion
-    ) => Inferable Project (premise ': context) conclusion where
-    infer = infer @Project @context @conclusion . hTail
+    ( Inferable Project context env conclusion
+    ) => Inferable Project (premise ': context) env conclusion where
+    infer = infer @Project @context @env @conclusion . hTail
 
 
 -- === Intro === --
-instance Inferable IntroTrue context True where
+instance Inferable IntroTrue context env True where
     infer _ = ()
 
 instance
-    ( Inferable node (a ': context) b
-    ) => Inferable (IntroImpl node) context (a -> b) where
-    infer ctxt = \x -> infer @node @(a ': context) @b (HCons x ctxt)
+    ( Inferable node (a ': context) env b
+    ) => Inferable (IntroImpl node) context env (a -> b) where
+    infer ctxt = \x -> infer @node @(a ': context) @env @b (HCons x ctxt)
 
 instance 
-    ( Inferable node_left context a
-    , Inferable node_right context b
-    ) => Inferable (IntroAnd node_left node_right) context (a `And` b) where
-    infer ctxt = (infer @node_left @context @a ctxt, infer @node_right @context @b ctxt)
+    ( Inferable node_left context env a
+    , Inferable node_right context env b
+    ) => Inferable (IntroAnd node_left node_right) context env (a `And` b) where
+    infer ctxt = (infer @node_left @context @env @a ctxt, infer @node_right @context @env @b ctxt)
 
 instance
-    ( Inferable node context a
-    ) => Inferable (IntroOrLeft node) context (a `Or` b) where
-    infer ctxt = Left $ infer @node @context @a ctxt
+    ( Inferable node context env a
+    ) => Inferable (IntroOrLeft node) context env (a `Or` b) where
+    infer ctxt = Left $ infer @node @context @env @a ctxt
 
 instance
-    ( Inferable node context b
-    ) => Inferable (IntroOrRight node) context (a `Or` b) where
-    infer ctxt = Right $ infer @node @context @b ctxt
+    ( Inferable node context env b
+    ) => Inferable (IntroOrRight node) context env (a `Or` b) where
+    infer ctxt = Right $ infer @node @context @env @b ctxt
 
 
 -- === Elim === --
 instance
-    ( Inferable node context False
-    ) => Inferable (ElimFalse node) context a where
-    infer ctxt = absurd $ infer @node @context @False ctxt :: a
+    ( Inferable node context env False
+    ) => Inferable (ElimFalse node) context env a where
+    infer ctxt = absurd $ infer @node @context @env @False ctxt :: a
 
 instance
-    ( Inferable node_impl context (a -> b)
-    , Inferable node_arg context a
-    ) => Inferable (ElimImpl (a -> b) node_impl node_arg) context b where
-    infer ctxt = infer @node_impl @context @(a -> b) ctxt $ infer @node_arg @context @a ctxt
+    ( (a -> b) ~ Apply (raw_a -> raw_b) env
+    , Inferable node_impl context env (a -> b)
+    , Inferable node_arg context env a
+    ) => Inferable (ElimImpl (raw_a -> raw_b) node_impl node_arg) context env b where
+    infer ctxt = infer @node_impl @context @env @(a -> b) ctxt $ infer @node_arg @context @env @a ctxt
 
 instance
-    ( Inferable node context (a `And` b)
-    ) => Inferable (ElimAndLeft (a `And` b) node) context a where
-    infer ctxt = fst $ infer @node @context @(a `And` b) ctxt
+    ( (a `And` b) ~ Apply (raw_a `And` raw_b) env
+    , Inferable node context env (a `And` b)
+    ) => Inferable (ElimAndLeft (raw_a `And` raw_b) node) context env a where
+    infer ctxt = fst $ infer @node @context @env @(a `And` b) ctxt
 
 instance
-    ( Inferable node context (a `And` b)
-    ) => Inferable (ElimAndRight (a `And` b) node) context b where
-    infer ctxt = snd $ infer @node @context @(a `And` b) ctxt
+    ( (a `And` b) ~ Apply (raw_a `And` raw_b) env
+    , Inferable node context env (a `And` b)
+    ) => Inferable (ElimAndRight (raw_a `And` raw_b) node) context env b where
+    infer ctxt = snd $ infer @node @context @env @(a `And` b) ctxt
 
 instance
-    ( Inferable node_or context (a `Or` b)
-    , Inferable node_left (a ': context) c
-    , Inferable node_right (b ': context) c
-    ) => Inferable (ElimOr (a `Or` b) node_or node_left node_right) context c where
-    infer ctxt = case infer @node_or @context @(a `Or` b) ctxt of
-        Left x -> infer @node_left @(a ': context) @c (HCons x ctxt)
-        Right y -> infer @node_right @(b ': context) @c (HCons y ctxt)
+    ( (a `Or` b) ~ Apply (raw_a `Or` raw_b) env
+    , Inferable node_or context env (a `Or` b)
+    , Inferable node_left (a ': context) env c
+    , Inferable node_right (b ': context) env c
+    ) => Inferable (ElimOr (raw_a `Or` raw_b) node_or node_left node_right) context env c where
+    infer ctxt = case infer @node_or @context @env @(a `Or` b) ctxt of
+        Left x -> infer @node_left @(a ': context) @env @c (HCons x ctxt)
+        Right y -> infer @node_right @(b ': context) @env @c (HCons y ctxt)
 
 
 -- === FOL === --
 instance
-    Inferable Reflexivity context (a :~: a) where
+    Inferable Reflexivity context env (a :~: a) where
     infer _ = Refl
 
 instance
-    ( Inferable node context (Eval (Apply p (Var x) v))
-    ) => Inferable (IntroPred node) context (Predicate p x v) where
-    infer ctxt = Predicate $ infer @node @context @(Eval (Apply p (Var x) v)) ctxt
+    ( c ~ Apply raw_c env
+    , Inferable node_a context env (a :=: c)
+    , Inferable node_b context env (b :=: c)
+    ) => Inferable (Transitivity raw_c node_a node_b) context env (a :=: b) where
+    infer ctxt = (\Refl Refl -> Refl)
+        (infer @node_a @context @env @(a :=: c) ctxt)
+        (infer @node_b @context @env @(b :=: c) ctxt)
 
 instance
-    ( forall (v :: d). Inferable (IntroPred node) context (Predicate p x (a v))
-    ) => Inferable (IntroForall node) context (Forall x (a :: d -> Type) p) where
-    infer ctxt = Forall $ infer @(IntroPred node) @context ctxt
+    ( Inferable node context ('(x, v) ': env) (Eval (Apply p '[ '(x, v)]))
+    ) => Inferable (IntroPred node) context env (Predicate p x v) where
+    infer ctxt = Predicate $ infer @node @context @('(x, v) ': env) @(Eval (Apply p '[ '(x, v)])) ctxt
 
 instance
-    ( Inferable (IntroPred node) context (Predicate p x (a v))
-    ) => Inferable (IntroExists (v :: d) node) context (Exists x (a :: d -> Type) p) where
-    infer ctxt = Exists $ infer @(IntroPred node) @context @(Predicate p x (a v)) ctxt
+    ( forall (v :: d). Inferable (IntroPred node) context env (Predicate p x (a v))
+    ) => Inferable (IntroForall node) context env (Forall x (a :: d -> Type) p) where
+    infer ctxt = Forall $ infer @(IntroPred node) @context @env ctxt
+
+instance
+    ( Inferable (IntroPred node) context env (Predicate p x (a v))
+    ) => Inferable (IntroExists (v :: d) node) context env (Exists x (a :: d -> Type) p) where
+    infer ctxt = Exists $ infer @(IntroPred node) @context @env @(Predicate p x (a v)) ctxt
 
 
 -- === ShowType === --

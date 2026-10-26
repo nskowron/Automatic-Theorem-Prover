@@ -18,11 +18,10 @@ data a :^: b
 -- === Eval === --
 type family Eval p where
 
-    Eval (F p a) = F p (Mod a p)
-    Eval (F p a :+: F p b) = Eval (F p (a + b))
+    Eval (F p a :+: F p b) = F p (Mod (a + b) p)
     Eval (F p a :-: F p b) = Eval (F p a :+: F p (p - Mod b p))
-    Eval (F p a :*: F p b) = Eval (F p (a * b))
+    Eval (F p a :*: F p b) = F p (Mod (a * b) p)
     Eval (F p a :/: F p b) = Eval (F p a :*: F p (Mod (b ^ (p - 1)) p))
-    Eval (F p a :^: F p b) = Eval (F p (a ^ b))
+    Eval (F p a :^: F p b) = F p (Mod (a ^ b) p)
 
     Eval p = p

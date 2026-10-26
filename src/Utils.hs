@@ -32,6 +32,10 @@ type family IsNat a where
     IsNat (S n) = True
     IsNat a = False
 
+type family LookUp x ls where
+    LookUp x ('(x, l) ': _) = l
+    LookUp x ('(y, l) ': ls) = LookUp x ls
+
 
 -- === Instantiable === --
 class Instantiable a where
