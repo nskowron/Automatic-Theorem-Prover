@@ -160,11 +160,13 @@ type family TryElim (flag :: Flag) (context :: [Type]) (conclusion :: Type) (pre
             :<*>: MakeNode Search (Insert b context) c parents
         :<|>: TryElim Search context c premises parents
 
-    TryElim flag context (a :=: b) ((a :=: c) ': premises) parents =
-        Transitivity (Dequantify c)
-            :<$>: MakeNode Find context (a :=: c) parents
-            :<*>: MakeNode Search context (b :=: c) parents
-        :<|>: TryElim Search context (a :=: b) premises parents
+    TryElim flag context p ((x :=: y) ': premises) parents =
+        (ElimEq (Dequantify (x :=: y)) (Dequantify p)
+            :<$>: MakeNode Find context (x :=: y) parents
+            :<*>: MakeNode Search context (Replace p y x) parents)
+        :<|>: (ElimEq (Dequantify (y :=: x)) (Dequantify p)
+            :<$>: (Symmetry :<$>: MakeNode Find context (x :=: y) parents)
+            :<*>: MakeNode Search context (Replace p x y) parents)
 
     -- TryElim flag context (a :=: b) ((b :=: c) ': premises) parents =
     --     MakeNode Search context (a :=: c) parents

@@ -10,6 +10,7 @@ import Data.Proxy ( Proxy(..) )
 import Data.Type.Equality ( (:~:)(..) )
 import Data.Void ( absurd )
 import GHC.TypeLits ( Symbol )
+import Unsafe.Coerce ( unsafeCoerce )
 
 
 -- === Node === --
@@ -31,7 +32,8 @@ data Node where
     ElimOr :: a -> Node -> Node -> Node -> Node
 
     Reflexivity :: Node
-    Transitivity :: a -> Node -> Node -> Node
+    Symmetry :: Node -> Node
+    ElimEq :: a -> p -> Node -> Node -> Node
 
     IntroPred :: Node -> Node
     IntroForall :: Node -> Node
@@ -124,13 +126,20 @@ instance
     infer _ = Refl
 
 instance
-    ( c ~ Apply raw_c env
-    , Inferable node_a context env (a :=: c)
-    , Inferable node_b context env (b :=: c)
-    ) => Inferable (Transitivity raw_c node_a node_b) context env (a :=: b) where
-    infer ctxt = (\Refl Refl -> Refl)
-        (infer @node_a @context @env @(a :=: c) ctxt)
-        (infer @node_b @context @env @(b :=: c) ctxt)
+    ( Inferable node context env (b :=: a)
+    ) => Inferable (Symmetry node) context env (a :=: b) where
+    infer ctxt = case infer @node @context @env @(b :=: a) ctxt of
+        Refl -> Refl
+
+instance
+    ( (x :=: y) ~ Apply (raw_x :=: raw_y) env
+    , py ~ Apply raw_py env
+    , px ~ Apply (Replace raw_py raw_y raw_x) env
+    , Inferable node_eq context env (x :=: y)
+    , Inferable node_pred context env px
+    ) => Inferable (ElimEq (raw_x :=: raw_y) raw_py node_eq node_pred) context env py where
+    infer ctxt = case infer @node_eq @context @env @(x :=: y) ctxt of
+        Refl -> unsafeCoerce $ infer @node_pred @context @env @px ctxt
 
 instance
     ( Inferable node context ('(x, v) ': env) (Eval (Apply p '[ '(x, v)]))

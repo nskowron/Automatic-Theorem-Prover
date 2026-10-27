@@ -53,6 +53,29 @@ type family Apply p env where
     Apply p env = p
 
 
+-- === Replace === --
+type family Replace p x y where
+
+    Replace x x y = y
+
+    Replace (a -> b) x y = Replace a x y -> Replace b x y
+    Replace (a `And` b) x y = Replace a x y `And` Replace b x y
+    Replace (a `Or` b) x y = Replace a x y `Or` Replace b x y
+
+    Replace (a :=: b) x y = Replace a x y :=: Replace b x y
+
+    Replace (Forall z a p) x y = Forall z a (Replace p x y)
+    Replace (Exists z a p) x y = Exists z a (Replace p x y)
+
+    Replace (a :+: b) x y = Replace a x y :+: Replace b x y
+    Replace (a :-: b) x y = Replace a x y :-: Replace b x y
+    Replace (a :*: b) x y = Replace a x y :*: Replace b x y
+    Replace (a :/: b) x y = Replace a x y :/: Replace b x y
+    Replace (a :^: b) x y = Replace a x y :^: Replace b x y
+
+    Replace p x y = p
+
+
 -- === Eval === --
 type family Eval p where
 
