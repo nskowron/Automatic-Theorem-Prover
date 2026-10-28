@@ -20,72 +20,35 @@ type n :=: m = n :~: m
 
 
 -- === Quantifiers === --
-data Predicate p x v where
-    Predicate :: Eval (Apply p '[ '(x, v)]) -> Predicate p x v
+data Forall (x :: Symbol) (p :: Type) where
+    Forall :: p -> Forall x p
 
-data Forall (x :: Symbol) (a :: d -> Type) (p :: Type) where
-    Forall :: (forall (v :: d). Predicate p x (a v)) -> Forall x a p
-
-data Exists (x :: Symbol) (a :: d -> Type) (p :: Type) where
-    Exists :: forall d (x :: Symbol) (a :: d -> Type) (v :: d) (p :: Type). Predicate p x (a v) -> Exists x a p
+data Exists (x :: Symbol) (p :: Type) where
+    Exists :: forall (t :: Type) (x :: Symbol) (p :: Type).
+        Apply p (Var x) t -> Exists x p
 
 
 -- === Apply === --
-type family Apply p env where
+type family Apply p x y where
 
-    Apply (a -> b) env = Apply a env -> Apply b env
-    Apply (a `And` b) env = Apply a env `And` Apply b env
-    Apply (a `Or` b) env = Apply a env `Or` Apply b env
+    Apply p x x = p
+    Apply x x y = y
 
-    Apply (a :=: b) env = Apply a env :=: Apply b env
+    Apply (a -> b) x y = Apply a x y -> Apply b x y
+    Apply (a `And` b) x y = Apply a x y `And` Apply b x y
+    Apply (a `Or` b) x y = Apply a x y `Or` Apply b x y
 
-    Apply (Forall x a p) env = Forall x a (Apply p ('(x, Var x) ': env))
-    Apply (Exists x a p) env = Exists x a (Apply p ('(x, Var x) ': env))
+    Apply (a :=: b) x y = Apply a x y :=: Apply b x y
 
-    Apply (a :+: b) env = Apply a env :+: Apply b env
-    Apply (a :-: b) env = Apply a env :-: Apply b env
-    Apply (a :*: b) env = Apply a env :*: Apply b env
-    Apply (a :/: b) env = Apply a env :/: Apply b env
-    Apply (a :^: b) env = Apply a env :^: Apply b env
+    Apply (Forall x p) (Var x) y = Forall x p -- allow variable shadowing
+    Apply (Forall z p) x y = Forall z (Apply p x y)
+    Apply (Exists x p) (Var x) y = Exists x p -- allow variable shadowing
+    Apply (Exists z p) x y = Exists z (Apply p x y)
 
-    Apply (Var x) env = LookUp x env
+    Apply (a :+: b) x y = Apply a x y :+: Apply b x y
+    Apply (a :-: b) x y = Apply a x y :-: Apply b x y
+    Apply (a :*: b) x y = Apply a x y :*: Apply b x y
+    Apply (a :/: b) x y = Apply a x y :/: Apply b x y
+    Apply (a :^: b) x y = Apply a x y :^: Apply b x y
 
-    Apply p env = p
-
-
--- === Replace === --
-type family Replace p x y where
-
-    Replace x x y = y
-
-    Replace (a -> b) x y = Replace a x y -> Replace b x y
-    Replace (a `And` b) x y = Replace a x y `And` Replace b x y
-    Replace (a `Or` b) x y = Replace a x y `Or` Replace b x y
-
-    Replace (a :=: b) x y = Replace a x y :=: Replace b x y
-
-    Replace (Forall z a p) x y = Forall z a (Replace p x y)
-    Replace (Exists z a p) x y = Exists z a (Replace p x y)
-
-    Replace (a :+: b) x y = Replace a x y :+: Replace b x y
-    Replace (a :-: b) x y = Replace a x y :-: Replace b x y
-    Replace (a :*: b) x y = Replace a x y :*: Replace b x y
-    Replace (a :/: b) x y = Replace a x y :/: Replace b x y
-    Replace (a :^: b) x y = Replace a x y :^: Replace b x y
-
-    Replace p x y = p
-
-
--- === Eval === --
-type family Eval p where
-
-    Eval (a -> b) = Eval a -> Eval b
-    Eval (a `And` b) = Eval a `And` Eval b
-    Eval (a `Or` b) = Eval a `Or` Eval b
-
-    Eval (a :=: b) = Eval a :=: Eval b
-
-    Eval (Forall x a p) = Forall x a (Eval p)
-    Eval (Exists x a p) = Exists x a (Eval p)
-
-    Eval p = ACFp.Eval p
+    Apply p x y = p

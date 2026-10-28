@@ -10,33 +10,6 @@ import Data.Kind ( Type )
 import GHC.TypeLits ( Symbol )
 
 
--- === Variables === --
-data All (x :: Symbol) (a :: d -> Type)
-data Any (x :: Symbol) (a :: d -> Type)
-
-type family Dequantify p where
-
-    Dequantify (a -> b) = Dequantify a -> Dequantify b
-    Dequantify (a `And` b) = Dequantify a `And` Dequantify b
-    Dequantify (a `Or` b) = Dequantify a `Or` Dequantify b
-
-    Dequantify (a :=: b) = Dequantify a :=: Dequantify b
-    
-    Dequantify (Forall x a p) = Forall x a (Dequantify p)
-    Dequantify (Exists x a p) = Exists x a (Dequantify p)
-
-    Dequantify (a :+: b) = Dequantify a :+: Dequantify b
-    Dequantify (a :-: b) = Dequantify a :-: Dequantify b
-    Dequantify (a :*: b) = Dequantify a :*: Dequantify b
-    Dequantify (a :/: b) = Dequantify a :/: Dequantify b
-    Dequantify (a :^: b) = Dequantify a :^: Dequantify b
-
-    Dequantify (All x a) = Var x
-    Dequantify (Any x a) = Var x
-
-    Dequantify p = p
-
-
 -- === Flag === --
 data Flag = Search -- default, try to apply all inference rules
     | Find -- try to find node in context, eg. no intro rules
@@ -58,12 +31,6 @@ type family MakeNode (flag :: Flag) (context :: [Type]) (conclusion :: Type) (pa
 
 -- === Try Infer === --
 type family TryInfer (flag :: Flag) (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) :: Maybe Node where
-
-    TryInfer Search context (a :=: b) parents =
-        TryProject context (a :=: b)
-        :<|>: TryIntro context (a :=: b) parents
-        :<|>: TryElim Search context (a :=: b) context parents
-        :<|>: TryElim Search context (b :=: a) context parents
 
     TryInfer Search context conclusion parents =
         TryProject context conclusion
@@ -110,15 +77,9 @@ type family TryIntro (context :: [Type]) (conclusion :: Type) (parents :: [([Typ
     TryIntro context (a :=: a) parents =
         Just Reflexivity
 
-    TryIntro context (Forall x a p) parents =
+    TryIntro context (Forall x p) parents =
         IntroForall
-            :<$>: MakeNode Search context (Eval (Apply p '[ '(x, All x a)])) parents
-
-    -- TryIntro context (Exists Type p) parents =
-    --     (IntroExists True
-    --         :<$>: MakeNode Search context (Predicate p True) parents)
-    --     :<|>: (IntroExists False
-    --         :<$>: MakeNode Search context (Predicate p False) parents)
+            :<$>: MakeNode Search context p parents
 
     TryIntro _ _ _ = Nothing
 
@@ -132,7 +93,7 @@ type family TryElim (flag :: Flag) (context :: [Type]) (conclusion :: Type) (pre
         :<|>: TryElim flag context a premises parents
 
     TryElim flag context b ((a -> b) ': premises) parents =
-        ElimImpl (Dequantify (a -> b))
+        ElimImpl (a -> b)
             :<$>: MakeNode Find context (a -> b) parents
             :<*>: MakeNode Search context a parents
         :<|>: TryElim flag context b premises parents
@@ -141,12 +102,12 @@ type family TryElim (flag :: Flag) (context :: [Type]) (conclusion :: Type) (pre
         TryElim flag context c (b ': premises) parents
 
     TryElim flag context a ((a `And` b) ': premises) parents =
-        ElimAndLeft (Dequantify (a `And` b))
+        ElimAndLeft (a `And` b)
             :<$>: MakeNode Find context (a `And` b) parents
         :<|>: TryElim flag context a premises parents
 
     TryElim flag context b ((a `And` b) ': premises) parents =
-        ElimAndRight (Dequantify (a `And` b))
+        ElimAndRight (a `And` b)
             :<$>: MakeNode Find context (a `And` b) parents
         :<|>: TryElim flag context b premises parents
 
@@ -154,23 +115,20 @@ type family TryElim (flag :: Flag) (context :: [Type]) (conclusion :: Type) (pre
         TryElim flag context c (a ': b ': premises) parents
 
     TryElim Search context c ((a `Or` b) ': premises) parents =
-        ElimOr (Dequantify (a `Or` b))
+        ElimOr (a `Or` b)
             :<$>: MakeNode Find context (a `Or` b) parents
             :<*>: MakeNode Search (Insert a context) c parents
             :<*>: MakeNode Search (Insert b context) c parents
         :<|>: TryElim Search context c premises parents
 
     TryElim flag context p ((x :=: y) ': premises) parents =
-        (ElimEq (Dequantify (x :=: y)) (Dequantify p)
+        (ElimEq (x :=: y)
             :<$>: MakeNode Find context (x :=: y) parents
-            :<*>: MakeNode Search context (Replace p y x) parents)
-        :<|>: (ElimEq (Dequantify (y :=: x)) (Dequantify p)
+            :<*>: MakeNode Search context (Apply p y x) parents)
+        :<|>: (ElimEq (y :=: x)
             :<$>: (Symmetry :<$>: MakeNode Find context (x :=: y) parents)
-            :<*>: MakeNode Search context (Replace p x y) parents)
-
-    -- TryElim flag context (a :=: b) ((b :=: c) ': premises) parents =
-    --     MakeNode Search context (a :=: c) parents
-    --     :<|>: TryElim Search context (a :=: b) premises parents
+            :<*>: MakeNode Search context (Apply p x y) parents)
+        :<|>: TryElim flag context p premises parents
 
     TryElim flag context conclusion (premise ': premises) parents =
         TryElim flag context conclusion premises parents
