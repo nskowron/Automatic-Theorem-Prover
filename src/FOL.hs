@@ -25,30 +25,30 @@ data Forall (x :: Symbol) (p :: Type) where
 
 data Exists (x :: Symbol) (p :: Type) where
     Exists :: forall (t :: Type) (x :: Symbol) (p :: Type).
-        Apply p (Var x) t -> Exists x p
+        Substitute p (Var x) t -> Exists x p
 
 
--- === Apply === --
-type family Apply p x y where
+-- === Substitute === --
+type family Substitute p x y where
 
-    Apply p x x = p
-    Apply x x y = y
+    Substitute p x x = p
+    Substitute x x y = y
 
-    Apply (a -> b) x y = Apply a x y -> Apply b x y
-    Apply (a `And` b) x y = Apply a x y `And` Apply b x y
-    Apply (a `Or` b) x y = Apply a x y `Or` Apply b x y
+    Substitute (a -> b) x y = Substitute a x y -> Substitute b x y
+    Substitute (a `And` b) x y = Substitute a x y `And` Substitute b x y
+    Substitute (a `Or` b) x y = Substitute a x y `Or` Substitute b x y
 
-    Apply (a :=: b) x y = Apply a x y :=: Apply b x y
+    Substitute (a :=: b) x y = Substitute a x y :=: Substitute b x y
 
-    Apply (Forall x p) (Var x) y = Forall x p -- allow variable shadowing
-    Apply (Forall z p) x y = Forall z (Apply p x y)
-    Apply (Exists x p) (Var x) y = Exists x p -- allow variable shadowing
-    Apply (Exists z p) x y = Exists z (Apply p x y)
+    Substitute (Forall x p) (Var x) y = Forall x p -- allow variable shadowing
+    Substitute (Forall z p) x y = Forall z (Substitute p x y)
+    Substitute (Exists x p) (Var x) y = Exists x p -- allow variable shadowing
+    Substitute (Exists z p) x y = Exists z (Substitute p x y)
 
-    Apply (a :+: b) x y = Apply a x y :+: Apply b x y
-    Apply (a :-: b) x y = Apply a x y :-: Apply b x y
-    Apply (a :*: b) x y = Apply a x y :*: Apply b x y
-    Apply (a :/: b) x y = Apply a x y :/: Apply b x y
-    Apply (a :^: b) x y = Apply a x y :^: Apply b x y
+    Substitute (a :+: b) x y = Substitute a x y :+: Substitute b x y
+    Substitute (a :-: b) x y = Substitute a x y :-: Substitute b x y
+    Substitute (a :*: b) x y = Substitute a x y :*: Substitute b x y
+    Substitute (a :/: b) x y = Substitute a x y :/: Substitute b x y
+    Substitute (a :^: b) x y = Substitute a x y :^: Substitute b x y
 
-    Apply p x y = p
+    Substitute p x y = p

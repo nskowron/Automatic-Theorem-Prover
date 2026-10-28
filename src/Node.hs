@@ -38,6 +38,8 @@ data Node where
     IntroForall :: Node -> Node
     IntroExists :: a -> Node -> Node
 
+    ElimExists :: a -> Node -> Node -> Node
+
 
 -- === Inferable === --
 class Inferable (node :: Node) (context :: [Type]) (conclusion :: Type) where
@@ -126,10 +128,10 @@ instance
 
 instance
     ( Inferable node_eq context (x :=: y)
-    , Inferable node_p context (Apply p y x)
+    , Inferable node_p context (Substitute p y x)
     ) => Inferable (ElimEq (x :=: y) node_eq node_p) context p where
     infer ctxt = case infer @node_eq @context @(x :=: y) ctxt of
-        Refl -> infer @node_p @context @(Apply p y x) ctxt
+        Refl -> infer @node_p @context @(Substitute p y x) ctxt
 
 instance
     ( Inferable node context p
@@ -137,9 +139,16 @@ instance
     infer ctxt = Forall $ infer @node @context @p ctxt
 
 instance
-    ( Inferable node context (Apply p (Var x) t)
+    ( Inferable node context (Substitute p (Var x) t)
     ) => Inferable (IntroExists t node) context (Exists x p) where
-    infer ctxt = Exists @t $ infer @node @context @(Apply p (Var x) t) ctxt
+    infer ctxt = Exists @t $ infer @node @context @(Substitute p (Var x) t) ctxt
+
+instance
+    ( Inferable node_exists context (Exists x p)
+    , Inferable node_c (p ': context) c
+    ) => Inferable (ElimExists (Exists x p) node_exists node_c) context c where
+    infer ctxt = case infer @node_exists @context @(Exists x p) ctxt of
+        (Exists p) -> infer @node_c @(p ': context) @c (HCons (unsafeCoerce p) ctxt)
 
 
 -- === ShowType === --
@@ -222,22 +231,42 @@ instance
     , ShowNode node_left (a ': context) c
     , ShowNode node_right (b ': context) c
     ) => ShowNode (ElimOr (a `Or` b) node_or node_left node_right) context c where
-    showNode x = "case " ++ showNode @node_or @context @(a `Or` b) x ++ " of { " ++
+    showNode x = "case (" ++ showNode @node_or @context @(a `Or` b) x ++ ") of { " ++
         "Left x" ++ show (x + 1) ++ " -> " ++ showNode @node_left @(a ': context) @c (x + 1) ++ "; " ++
         "Right x" ++ show (x + 1) ++ " -> " ++ showNode @node_right @(b ': context) @c (x + 1) ++ " }"
 
 
 -- === FOL === --
 instance
-    ShowNode Reflexivity context (a :~: a) where
+    ShowNode Reflexivity context (a :=: a) where
     showNode _ = "Refl"
 
--- instance
---     ( forall (v :: a). ShowNode node context (Eval p x v)
---     ) => ShowNode (IntroForall node) context (Forall x a p) where
---     showNode x = "Forall (" ++ showNode @node @context x ++ ")"
+instance
+    ( ShowNode node context (y :=: x)
+    ) => ShowNode (Symmetry node) context (x :=: y) where
+    showNode x = "case (" ++ showNode @node @context @(y :=: x) x ++ ") of { " ++
+        "Refl -> Refl }"
 
--- instance
---     ( ShowNode node context (Eval p x v)
---     ) => ShowNode (IntroExists (v :: a) node) context (Exists x a p) where
---     showNode x = "Exists (" ++ showNode @node @context @(Eval p x v) x ++ ")"
+instance
+    ( ShowNode node_eq context (x :=: y)
+    , ShowNode node_p context (Substitute p y x)
+    ) => ShowNode (ElimEq (x :=: y) node_eq node_p) context p where
+    showNode x = "case (" ++ showNode @node_eq @context @(x :=: y) x ++ ") of { " ++
+        "Refl -> (" ++ showNode @node_p @context @(Substitute p y x) x ++ ") }"
+
+instance
+    ( ShowNode node context p
+    ) => ShowNode (IntroForall node) context (Forall x p) where
+    showNode x = "Forall (" ++ showNode @node @context @p x ++ ")"
+
+instance
+    ( ShowNode node context (Substitute p (Var x) t)
+    ) => ShowNode (IntroExists t node) context (Exists x p) where
+    showNode x = "Exists (" ++ showNode @node @context @(Substitute p (Var x) t) x ++ ")"
+
+instance
+    ( ShowNode node_exists context (Exists x p)
+    , ShowNode node_c (p ': context) c
+    ) => ShowNode (ElimExists (Exists x p) node_exists node_c) context c where
+    showNode x = "case (" ++ showNode @node_exists @context @(Exists x p) x ++ ") of { " ++
+        "(Exists p) -> (" ++ showNode @node_c @(p ': context) @c (x + 1) ++ ")"

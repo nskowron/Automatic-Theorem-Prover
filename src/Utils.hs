@@ -18,6 +18,10 @@ type family If p a b where
     If (_ `Or` True) a _ = a
     If false _ b = b
 
+type family Equal a b where
+    Equal a a = True
+    Equal _ _ = False
+
 type family FromMaybe d a where
     FromMaybe d Nothing = d
     FromMaybe _ (Just a) = a
@@ -26,6 +30,11 @@ type family Insert e l where
     Insert e '[] = '[e]
     Insert e (e ': l) = e ': l
     Insert e (l ': ls) = l ': Insert e ls
+
+type family Remove e l where
+    Remove e '[] = '[]
+    Remove e (e ': l) = Remove e l
+    Remove e (l ': ls) = l ': Remove e ls
 
 type family IsNat a where
     IsNat Z = True
