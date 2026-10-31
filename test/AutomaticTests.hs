@@ -9,6 +9,11 @@ import Data.Kind ( Type )
 import GHC.TypeLits ( Symbol )
 
 
+-- === Propositional Symbols === --
+data A
+data B
+data C
+
 -- === Propositional Logic === --
 _ = prove @True
 _ = prove @(True -> True)
@@ -57,8 +62,13 @@ _ = prove @((A `Or` B) -> (A -> C) -> (B -> C) -> C)
 _ = prove @((A -> C) -> (B -> C) -> (A `Or` B) -> C)
 
 
+-- === First-Order Variables === --
+data X
+data Y
+data Z
+
 -- === First-Order Logic === --
-_ = prove @(Forall "x" (Var "x" :=: Var "x"))
-_ = prove @(Forall "x" (Forall "y" ((Var "x" :=: Var "y") -> (Var "y" :=: Var "x"))))
-_ = prove @(Forall "a" (Forall "b" (Forall "c" (((Var "a" :=: Var "b") `And` (Var "b" :=: Var "c")) -> (Var "a" :=: Var "c")))))
-_ = prove @(Forall "x" (Forall "y" ((Exists "z" ((Var "z" :=: Var "x") `And` (Var "z" :=: Var "y"))) -> (Var "x" :=: Var "y"))))
+_ = prove @(Forall X (X :=: X))
+_ = prove @(Forall X (Forall Y ((X :=: Y) -> (Y :=: X))))
+-- _ = prove @(Forall X (Forall Y (Forall Z (((X :=: Y) `And` (Y :=: Z)) -> (X :=: Z)))))
+-- _ = prove @(Forall X (Forall Y ((Exists Z ((Z :=: X) `And` (Z :=: Y))) -> (X :=: Y))))

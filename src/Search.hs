@@ -13,22 +13,6 @@ import GHC.TypeLits
 -- === FV X === --
 data X (n :: Nat)
 
-type family Apply p env where
-
-    Apply (X n) ('(n, v) ': _) = v
-    Apply (X n) ('(m, _) ': env) = Apply (X n) env
-
-    Apply (a -> b) env = Apply a env -> Apply b env
-    Apply (a `And` b) env = Apply a env `And` Apply b env
-    Apply (a `Or` b) env = Apply a env `Or` Apply b env
-
-    Apply (a :=: b) env = Apply a env :=: Apply b env
-    
-    Apply (Forall x p) env = Forall x (Apply p env)
-    Apply (Exists x p) env = Exists x (Apply p env)
-
-    Apply p env = p
-
 
 -- === Flag === --
 data Flag = Search -- default, try to apply all inference rules
@@ -37,7 +21,7 @@ data Flag = Search -- default, try to apply all inference rules
 
 
 -- === MakeNode === --
-type family MakeNode (flag :: Flag) (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) (env :: [(Nat, Type)]) :: Maybe Node where
+type family MakeNode (flag :: Flag) (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) (env :: [(Type, Type)]) :: Maybe Node where
 
     MakeNode flag context conclusion parents env =
         TryInfer
@@ -51,7 +35,7 @@ type family MakeNode (flag :: Flag) (context :: [Type]) (conclusion :: Type) (pa
 
 
 -- === Try Infer === --
-type family TryInfer (flag :: Flag) (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) (env :: [(Nat, Type)]) :: Maybe Node where
+type family TryInfer (flag :: Flag) (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) (env :: [(Type, Type)]) :: Maybe Node where
 
     TryInfer Search context (a -> b) parents env =
         TryIntro context (a -> b) parents env
@@ -89,7 +73,7 @@ type family TryProject (context :: [Type]) (conclusion :: Type) where
 
 
 -- === TryIntro === --
-type family TryIntro (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) (env :: [(Nat, Type)]) :: Maybe Node where
+type family TryIntro (context :: [Type]) (conclusion :: Type) (parents :: [([Type], Type)]) (env :: [(Type, Type)]) :: Maybe Node where
 
     TryIntro _ True _ _ =
         Just IntroTrue
@@ -112,29 +96,29 @@ type family TryIntro (context :: [Type]) (conclusion :: Type) (parents :: [([Typ
     TryIntro context (a :=: a) parents env =
         Just Reflexivity
 
-    TryIntro context (Forall x p) parents ('(n, v) ': env) =
+    TryIntro context (Forall x p) parents ('(X n, v) ': env) =
         IntroForall
-            :<$>: MakeNode Search context (Substitute p (Var x) (X (n + 1))) parents ('(n + 1, Var x) ': '(n, v) ': env)
+            :<$>: (IntroPredicate :<$>: MakeNode Search context (Substitute p x (X (n + 1))) parents ('(X (n + 1), x) ': '(X n, v) ': env))
 
-    TryIntro context (Exists x p) parents ('(n, v) ': env) =
-        TryIntroExists context (Exists x p) n parents ('(n, v) ': env)
+    TryIntro context (Exists x p) parents ('(X n, v) ': env) =
+        TryIntroExists context (Exists x p) n parents ('(X n, v) ': env)
 
     TryIntro _ _ _ _ = Nothing
 
     
 -- === TryIntroExists === --
-type family TryIntroExists (context :: [Type]) (conclusion :: Type) (n :: Nat) (parents :: [([Type], Type)]) (env :: [(Nat, Type)]) :: Maybe Node where
+type family TryIntroExists (context :: [Type]) (conclusion :: Type) (n :: Nat) (parents :: [([Type], Type)]) (env :: [(Type, Type)]) :: Maybe Node where
 
     TryIntroExists _ _ 0 _ _ = Nothing
 
     TryIntroExists context (Exists x p) n parents env =
         IntroExists (Apply (X n) env)
-            :<$>: MakeNode Find context (Substitute p (Var x) (X n)) parents env
+            :<$>: (IntroPredicate :<$>: MakeNode Find context (Substitute p x (X n)) parents env)
         :<|>: TryIntroExists context (Exists x p) (n - 1) parents env
 
 
 -- === TryElim === --
-type family TryElim (flag :: Flag) (context :: [Type]) (conclusion :: Type) (premises :: [Type]) (parents :: [([Type], Type)]) (env :: [(Nat, Type)]) :: Maybe Node where
+type family TryElim (flag :: Flag) (context :: [Type]) (conclusion :: Type) (premises :: [Type]) (parents :: [([Type], Type)]) (env :: [(Type, Type)]) :: Maybe Node where
 
     TryElim flag context a (False ': premises) parents env =
         ElimFalse
@@ -171,19 +155,26 @@ type family TryElim (flag :: Flag) (context :: [Type]) (conclusion :: Type) (pre
         :<|>: TryElim Search context c premises parents env
 
     TryElim flag context p ((x :=: y) ': premises) parents env =
-        (ElimEq (Apply (x :=: y) env)
+        (ElimPredicate (Apply (Predicate p y y) env) :<$>: (ElimEq (Apply (x :=: y) env)
             :<$>: MakeNode Find context (x :=: y) parents env
-            :<*>: MakeNode Search context (Substitute p y x) parents env)
-        :<|>: (ElimEq (Apply (y :=: x) env)
+            :<*>: (IntroPredicate :<$>: MakeNode Search context (Substitute p y x) parents env)))
+        :<|>: (ElimPredicate (Apply (Predicate p x x) env) :<$>: (ElimEq (Apply (y :=: x) env)
             :<$>: (Symmetry :<$>: MakeNode Find context (x :=: y) parents env)
-            :<*>: MakeNode Search context (Substitute p x y) parents env)
+            :<*>: (IntroPredicate :<$>: MakeNode Search context (Substitute p x y) parents env)))
         :<|>: TryElim flag context p premises parents env
 
-    TryElim Search context c ((Exists x p) ': premises) parents ('(n, v) ': env) =
-        ElimExists (Apply (Exists x p) ('(n, v) ': env))
-            :<$>: MakeNode Find context (Exists x p) parents ('(n, v) ': env)
-            :<*>: MakeNode Search (Substitute p (Var x) (X (n + 1)) ': Remove (Exists x p) context) c parents ('(n + 1, Var x) ': '(n, v) ': env)
-        :<|>: TryElim Search context c premises parents ('(n, v) ': env)
+    TryElim flag context c ((Predicate p x t) ': premises) parents env =
+        If (Equal c (Substitute p x t))
+            ((ElimPredicate (Apply (Predicate p x t) env)
+                :<$>: MakeNode Find context (Predicate p x t) parents env)
+            :<|>: TryElim flag context c premises parents env)
+            (TryElim flag context c (Substitute p x t ': premises) parents env)
+
+    TryElim Search context c ((Exists x p) ': premises) parents ('(X n, v) ': env) =
+        ElimExists (Apply (Exists x p) ('(X n, v) ': env))
+            :<$>: MakeNode Find context (Exists x p) parents ('(X n, v) ': env)
+            :<*>: MakeNode Search (Predicate p x (X (n + 1)) ': Remove (Exists x p) context) c parents ('(X (n + 1), x) ': '(X n, v) ': env)
+        :<|>: TryElim Search context c premises parents ('(X n, v) ': env)
 
     TryElim flag context conclusion (premise ': premises) parents env =
         TryElim flag context conclusion premises parents env

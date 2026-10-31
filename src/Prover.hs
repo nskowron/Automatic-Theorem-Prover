@@ -13,12 +13,12 @@ import GHC.TypeLits ( Nat )
 -- === Provable === --
 class Provable a where
     prove :: a
-    emit :: IO ()
+    -- emit :: IO ()
 
 instance 
-    ( tree ~ FromMaybe Unprovable (MakeNode Search '[] proposition '[] '[ '(0, True) ])
-    , Inferable tree '[] proposition
-    , ShowType '(tree, proposition)
+    ( tree ~ FromMaybe Unprovable (MakeNode Search '[] proposition '[] '[ '(X 0, True) ])
+    , Inferable tree '[] '[] proposition
+    -- , ShowType '(tree, proposition)
     ) => Provable proposition where
-    prove = infer @tree @'[] @proposition HNil
-    emit = putStrLn $ showType @'(tree, proposition)
+    prove = infer @tree @'[] @'[] @proposition HNil
+    -- emit = putStrLn $ showType @'(tree, proposition)

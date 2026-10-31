@@ -8,11 +8,8 @@ import qualified ACFp ( Eval )
 
 import Data.Kind ( Type )
 import Data.Type.Equality ( (:~:)(..) )
+import Data.Proxy ( Proxy(..) )
 import GHC.TypeLits ( Symbol )
-
-
--- === Var === --
-data Var (x :: Symbol)
 
 
 -- === Equals === --
@@ -20,35 +17,43 @@ type n :=: m = n :~: m
 
 
 -- === Quantifiers === --
-data Forall (x :: Symbol) (p :: Type) where
-    Forall :: p -> Forall x p
+data Forall (x :: Type) (p :: Type) where
+    Forall :: (forall t. Predicate p x t) -> Forall x p
 
-data Exists (x :: Symbol) (p :: Type) where
-    Exists :: forall (t :: Type) (x :: Symbol) (p :: Type).
-        Substitute p (Var x) t -> Exists x p
+data Exists (x :: Type) (p :: Type) where
+    Exists :: forall t p x. Predicate p x t -> Exists x p
+
+
+-- === Predicate === --
+data Predicate (p :: Type) (x :: Type) (t :: Type) where
+    Predicate :: Substitute p x t -> Predicate p x t
+
+
+-- === Apply === --
+type family Apply (p :: Type) (env :: [(Type, Type)]) where
+
+    Apply (a -> b) env = Apply a env -> Apply b env
+    Apply (a `And` b) env = Apply a env `And` Apply b env
+    Apply (a `Or` b) env = Apply a env `Or` Apply b env
+
+    Apply (a :=: b) env = Apply a env :=: Apply b env
+
+    Apply (Predicate p x s) env = Predicate p x (Apply s env) -- allow variable shadowing
+    Apply (Predicate p y s) env = Predicate (Apply p env) y (Apply s env)
+    Apply (Forall x p) env = Forall x p -- allow tariable shadowing
+    Apply (Forall y p) env = Forall y (Apply p env)
+    Apply (Exists x p) env = Exists x p -- allow tariable shadowing
+    Apply (Exists y p) env = Exists y (Apply p env)
+
+    Apply x env = Get x env
+
+type family ApplyList (ps :: [Type]) (env :: [(Type, Type)]) where
+
+    ApplyList '[] env = '[]
+    ApplyList (p ': ps) env = Apply p env ': ApplyList ps env
 
 
 -- === Substitute === --
-type family Substitute p x y where
+type family Substitute p x t where
 
-    Substitute p x x = p
-    Substitute x x y = y
-
-    Substitute (a -> b) x y = Substitute a x y -> Substitute b x y
-    Substitute (a `And` b) x y = Substitute a x y `And` Substitute b x y
-    Substitute (a `Or` b) x y = Substitute a x y `Or` Substitute b x y
-
-    Substitute (a :=: b) x y = Substitute a x y :=: Substitute b x y
-
-    Substitute (Forall x p) (Var x) y = Forall x p -- allow variable shadowing
-    Substitute (Forall z p) x y = Forall z (Substitute p x y)
-    Substitute (Exists x p) (Var x) y = Exists x p -- allow variable shadowing
-    Substitute (Exists z p) x y = Exists z (Substitute p x y)
-
-    Substitute (a :+: b) x y = Substitute a x y :+: Substitute b x y
-    Substitute (a :-: b) x y = Substitute a x y :-: Substitute b x y
-    Substitute (a :*: b) x y = Substitute a x y :*: Substitute b x y
-    Substitute (a :/: b) x y = Substitute a x y :/: Substitute b x y
-    Substitute (a :^: b) x y = Substitute a x y :^: Substitute b x y
-
-    Substitute p x y = p
+    Substitute p x t = Apply p '[ '(x, t) ]

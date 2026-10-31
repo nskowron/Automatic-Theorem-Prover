@@ -8,6 +8,10 @@ import Prelude hiding ( (>>=), (>>) )
 
 -- === Proving Using the Search Engine === --
 
+-- define some propositional symbols
+data A
+data B
+
 -- define a proposition (a type)
 type T1 = (False -> True)
 

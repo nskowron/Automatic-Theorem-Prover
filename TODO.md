@@ -4,16 +4,13 @@
 
 - [x] Move the Search Algorithm to compile time
   - [x] Elim False rule
-  - [ ] Think of passing the type into Project Node
-    - can show (not infer) without passing the type
-    - cannot even if we parametrized Node
 
 - [x] Printing the Proof
   - [x] Think about changing Insert to :
 
 - [ ] Extend the Provable Theory
   - [x] FOL
-  - [ ] ACFp
+  - [ ] ACFp (optional)
     - [ ] add prime checking
 
 - [ ] Using and Comparing Heuristics
@@ -26,11 +23,12 @@
 
 - [ ] Organize source files
 
+- [ ] Speed up (fix eagerness)
+  - [ ] Replace :<|>:, :<$>:, :<*>: with type families with pattern matching
+
 - [ ] The awkward display/emit
   - [ ] ShowNode with the '()
   - [ ] Add printing of goal conclusion type and intro var types
-
-- [ ] Think about moving Apply like Eval
 
 - [ ] unify kind expectations
 
