@@ -68,7 +68,8 @@ data Y
 data Z
 
 -- === First-Order Logic === --
-_ = prove @(Forall X (X :=: X))
-_ = prove @(Forall X (Forall Y ((X :=: Y) -> (Y :=: X))))
--- _ = prove @(Forall X (Forall Y (Forall Z (((X :=: Y) `And` (Y :=: Z)) -> (X :=: Z)))))
--- _ = prove @(Forall X (Forall Y ((Exists Z ((Z :=: X) `And` (Z :=: Y))) -> (X :=: Y))))
+_ = prove @(Forall X Var (X :=: X))
+_ = prove @(Forall X Var (Forall Y Var ((X :=: Y) -> (Y :=: X))))
+_ = prove @(Forall X Var (Forall Y Var (Forall Z Var (((X :=: Y) `And` (Y :=: Z)) -> (X :=: Z)))))
+_ = prove @(Forall X Var (Forall Y Var ((Exists Z Var ((X :=: Z) `And` (Z :=: Y))) -> (X :=: Y))))
+-- _ = prove @(Forall X Var (Forall Y Var (Forall Z Var ((X :=: Y) -> (Y :=: Z) -> (X :=: Z)))))

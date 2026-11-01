@@ -24,7 +24,7 @@ p2 = Prover.prove @(A -> B -> (A `And` B))
 -- p1 and p2 are objects of given types (proofs of given propositions)
 -- but we don't have to load the proof to any object, we can just
 -- check if it compiles (compiles <-> provable):
-_ = Prover.prove @(A `Or` Not (B `And` Not B))
+-- _ = Prover.prove @(A `Or` Not (B `And` Not B))
 
 -- we can also instead emit the proof as a String
 -- in interactive:

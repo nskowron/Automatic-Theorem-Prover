@@ -40,11 +40,6 @@ type family Get k m where
     Get k ('(k, e) ': m) = e
     Get k ('(l, e) ': m) = Get k m
 
-type family Map k e m where
-    Map k e ('(k, f) ': m) = '(k, e) ': m
-    Map k e ('(l, f) ': m) = '(l, f) ': Map k e m
-    Map k e '[] = '[ '(k, e) ]
-
 type family IsNat a where
     IsNat Z = True
     IsNat (S n) = True
