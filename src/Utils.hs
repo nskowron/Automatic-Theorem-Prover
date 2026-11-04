@@ -31,10 +31,10 @@ type family Insert e l where
     Insert e (e ': l) = e ': l
     Insert e (l ': ls) = l ': Insert e ls
 
-type family Remove e l where
-    Remove e '[] = '[]
-    Remove e (e ': l) = Remove e l
-    Remove e (l ': ls) = l ': Remove e ls
+-- type family Remove e l where
+--     Remove e '[] = '[]
+--     Remove e (e ': l) = Remove e l
+--     Remove e (l ': ls) = l ': Remove e ls
 
 type family Get k m where
     Get k ('(k, e) ': m) = e

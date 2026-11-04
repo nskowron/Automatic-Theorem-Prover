@@ -17,7 +17,7 @@ import Data.Type.Nat
 data Node where
     Unprovable :: Node
 
-    Project :: Node
+    Project :: Nat -> Node
 
     IntroTrue :: Node
     IntroImpl :: Node -> Node
@@ -51,18 +51,18 @@ class Inferable (node :: Node) (env :: [(Type, Type)]) (context :: [Type]) (conc
 
 
 -- === Project === --
-instance {-# OVERLAPPING #-}
-    Inferable Project env (conclusion ': context) conclusion where
+instance
+    Inferable (Project Z) env (conclusion ': context) conclusion where
     infer = hHead
 
-instance {-# OVERLAPPABLE #-}
-    Inferable Project env (Predicate p x t ': context) (Predicate p x s) where
+instance
+    ( Inferable (Project n) env context conclusion
+    ) => Inferable (Project (S n)) env (premise ': context) conclusion where
+    infer = infer @(Project n) @env @context @conclusion . hTail
 
 
-instance {-# OVERLAPPABLE #-}
-    ( Inferable Project env context conclusion
-    ) => Inferable Project env (premise ': context) conclusion where
-    infer = infer @Project @env @context @conclusion . hTail
+-- instance {-# OVERLAPPABLE #-}
+--     Inferable Project env (Predicate p x t ': context) (Predicate p x s) where
 
 
 -- === Intro === --
@@ -141,10 +141,10 @@ instance
 instance
     ( (x :=: y) ~ Apply type_eq env
     , Inferable node_eq env context (x :=: y)
-    , Inferable node_p env context (Predicate p a y)
-    ) => Inferable (ElimEq type_eq node_eq node_p) env context (Predicate p a x) where
+    , Inferable node_pred env context (Predicate p a y)
+    ) => Inferable (ElimEq type_eq node_eq node_pred) env context (Predicate p a x) where
     infer ctxt = case infer @node_eq @env @context @(x :=: y) ctxt of
-        Refl -> infer @node_p @env @context @(Predicate p a y) ctxt
+        Refl -> infer @node_pred @env @context @(Predicate p a y) ctxt
 
 instance
     ( Inferable node (Map x t env) context (Substitute p x t)
@@ -210,14 +210,14 @@ instance
 
 
 -- === Project === --
-instance {-# OVERLAPPING #-}
-    ShowNode Project n (conclusion ': context) conclusion where
+instance
+    ShowNode (Project Z) n (conclusion ': context) conclusion where
     showNode x = "x" ++ show x
 
-instance {-# OVERLAPPABLE #-}
-    ( ShowNode Project n context conclusion
-    ) => ShowNode Project n (premise ': context) conclusion where
-    showNode x = showNode @Project @n @context @conclusion (x - 1)
+instance
+    ( ShowNode (Project x) n context conclusion
+    ) => ShowNode (Project (S x)) n (premise ': context) conclusion where
+    showNode x = showNode @(Project x) @n @context @conclusion (x - 1)
 
 
 -- === Intro === --

@@ -11,6 +11,7 @@ library prover
     Node
     Prover
     Search
+    NewSearch
   default-extensions:
     AllowAmbiguousTypes
     DataKinds

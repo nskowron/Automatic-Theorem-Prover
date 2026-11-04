@@ -6,6 +6,7 @@ import Proposition
 import FOL
 import Node
 import Search
+import NewSearch
 
 import Data.HList ( HList( HNil ) )
 import Data.Kind ( Type )
@@ -20,11 +21,11 @@ class Provable a where
 instance 
     ( parents ~ '[]
     , context ~ '[]
-    , n ~ Z
-    , env ~ '[ '(X n, True) ]
-    , tree ~ FromMaybe Unprovable (MakeNode Search context proposition n parents)
-    , Apply proposition env ~ proposition
-    , Inferable tree env context proposition
+    , fv ~ X Z
+    , env ~ '[ '(fv, True) ]
+    , config ~ Config context context fv
+    , tree ~ FromMaybe Unprovable (TryInfer '[Intro] proposition config Nothing)
+    , Inferable tree env '[] proposition
     -- , ShowType '(tree, proposition)
     ) => Provable proposition where
     prove = infer @tree @env @context @proposition HNil

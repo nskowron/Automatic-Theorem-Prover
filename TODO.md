@@ -30,7 +30,12 @@
   - [ ] ShowNode with the '()
   - [ ] Add printing of goal conclusion type and intro var types
 
-- [ ] unify kind expectations
+- [ ] Style unification
+  - [ ] Unify kind expectations
+  - [ ] Unify _
+  - [ ] Unify exceptions for Try... rules
+
+- [ ] Consider passing Find nodes to TryElimPremise
 
 ## Testing
 
