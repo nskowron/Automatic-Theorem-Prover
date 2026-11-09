@@ -88,7 +88,7 @@ _ = prove @(Forall X Var (Forall Y Var ((X :=: Y) -> Forall Z Var (X :=: Y))))
 _ = prove @(Forall X Var (Forall Y Var ((X :=: Y) -> Forall Z Var (Y :=: X))))
 
 _ = prove @(Forall X Var (Forall Y Var (Forall Z Var (X :=: Z) -> (X :=: Y))))
-_ = prove @(Forall X Var (Forall Y Var (Forall Z Var ((X :=: Z) -> (Z :=: X)) -> (X :=: Y))))
+_ = prove @(Forall X Var (Forall Y Var (Forall Z Var ((X :=: Z) -> (Z :=: Y)) -> (X :=: Y))))
 
 _ = prove @(Forall X Var (Exists Y Var (Y :=: X)))
 _ = prove @(Forall X Var (Exists Y Var ((X :=: Y) `And` (Y :=: X))))

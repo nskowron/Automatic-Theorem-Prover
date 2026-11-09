@@ -20,13 +20,13 @@ type family TryInfer (rule_order :: [Rule]) (goal :: Type) config (last_node :: 
     TryInfer '[] _ _ Nothing = Nothing
 
     TryInfer (Proj ': rule_order) goal config Nothing =
-        TryInfer rule_order goal config (TryProj Z goal (GetFullContext config))
+        TryInfer rule_order goal config (TryProj Z goal (GetContext config))
 
     TryInfer (Intro ': rule_order) goal config Nothing =
         TryInfer rule_order goal config (TryIntro goal config '[])
 
     TryInfer (Elim ': rule_order) goal config Nothing =
-        TryInfer rule_order goal config (TryElim (GetFullContext config) (GetSearchContext config) goal config Nothing)
+        TryInfer rule_order goal config (TryElim (GetContext config) goal config Nothing)
 
 type family TryProj (n :: Nat) (goal :: Type) (context :: [Type]) where
 
@@ -106,28 +106,22 @@ type family TryIntroExists (witness :: Type) (goal :: Type) config (last_node ::
     TryIntroExists (X (S n)) (Exists x a p) config Nothing =
         TryIntroExists (X n) (Exists x a p) config (TryInfer Search (Substitute p x (X n)) config Nothing)
 
-type family TryElim (full_context :: [Type]) (search_context :: [Type]) (goal :: Type) config (last_node :: Maybe Node) where
+type family TryElim (context :: [Type]) (goal :: Type) config (last_node :: Maybe Node) where
 
-    TryElim _ _ _ _ (Just node) = Just node
-    TryElim '[] '[] _ _ Nothing = Nothing
+    TryElim _ _ _ (Just node) = Just node
+    TryElim '[] _ _ Nothing = Nothing
 
-    TryElim (_ ': full_context) (True ': search_context) goal config Nothing =
-        TryElim full_context search_context goal config Nothing
+    TryElim ((a -> b) ': context) goal config Nothing =
+        TryElim (b ': context) goal config (TryElimPremise (If (Member (a -> b) (GetTabu config)) True (a -> b)) goal config '[])
 
-    TryElim ((a -> b) ': full_context) ((p -> q) ': search_context) goal config Nothing =
-        TryElim (b ': full_context) (q ': search_context) goal config (TryElimPremise (a -> b) goal config '[])
+    TryElim ((a `And` b) ': context) goal config Nothing =
+        TryElim (a ': b ': context) goal config (TryElimPremise (If (Member (a `And` b) (GetTabu config)) True (a `And` b)) goal config '[])
 
-    TryElim ((a `And` b) ': full_context) ((p `And` q) ': search_context) goal config Nothing =
-        TryElim (a ': b ': full_context) (p ': q ': search_context) goal config (TryElimPremise (a `And` b) goal config '[])
+    TryElim (Predicate p x t ': context) goal config Nothing =
+        TryElim (Substitute p x t ': context) goal config (TryElimPremise (If (Member (Predicate p x t) (GetTabu config)) True (Predicate p x t)) goal config '[])
 
-    TryElim ((a `Or` b) ': full_context) ((p `Or` q) ': search_context) goal config Nothing =
-        TryElim full_context search_context goal config (TryElimPremise (a `Or` b) goal config '[])
-
-    TryElim (Predicate p x t ': full_context) (Predicate q x t ': search_context) goal config Nothing =
-        TryElim (Substitute p x t ': full_context) (Substitute q x t ': search_context) goal config (TryElimPremise (Predicate p x t) goal config '[])
-
-    TryElim (a ': full_context) (p ': search_context) goal config Nothing =
-        TryElim full_context search_context goal config (TryElimPremise a goal config '[])
+    TryElim (p ': context) goal config Nothing =
+        TryElim context goal config (TryElimPremise (If (Member p (GetTabu config)) True p) goal config '[])
 
 type family TryElimPremise (full_premise :: Type) (goal :: Type) config (subgoals :: [Maybe Node]) where
 
@@ -190,7 +184,7 @@ type family TryElimPremise (full_premise :: Type) (goal :: Type) config (subgoal
 
     -- Elim Forall --
     TryElimPremise (Forall x a p) goal config '[] =
-        TryElimForall (GetNextFV config) (Forall x a p) goal config False '[TryInfer Find (Forall x a p) config Nothing]
+        TryElimForall (GetNextFV config) (Forall x a p) goal config False '[TryInfer Find (Forall x a p) config Nothing, Nothing]
 
     -- Elim Exists --
     TryElimPremise (Exists x a p) goal config '[] =
@@ -210,7 +204,7 @@ type family TryElimEq (premise :: Type) (goal :: Type) config (subgoals :: [Mayb
     TryElimEq (x :=: y) goal config '[Nothing] = Nothing
 
     TryElimEq (x :=: y) goal config '[] =
-        TryElimEq (x :=: y) goal (Unassume (x :=: y) config) '[TryInfer Find (x :=: y) config Nothing]
+        TryElimEq (x :=: y) goal (Unassume (x :=: y) config) '[TryInfer Find (x :=: y) (Unassume (x :=: y) config) Nothing]
 
     TryElimEq (x :=: y) goal config '[Just node_eq] =
         TryElimEq (x :=: y) goal config '[Just node_eq, TryInfer Search (Substitute goal x y) config Nothing]
@@ -236,7 +230,7 @@ type family TryElimForall (candidate :: Type) (premise :: Type) (goal :: Type) c
         Just (ElimPredicate (Predicate p x candidate) (ElimForall node))
 
     TryElimForall (X n) (Forall x a p) goal config False '[Just node] =
-        TryElimForall (X n) (Forall x a p) goal config False '[Just node, TryElimPremise (Substitute p x (X n)) goal config '[]]
+        TryElimForall (X n) (Forall x a p) goal config False '[Just node, TryElim '[Substitute p x (X n)] goal config Nothing]
 
     TryElimForall (X Z) (Forall x a p) goal config False '[Just node, Nothing] = Nothing
 

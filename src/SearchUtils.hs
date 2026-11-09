@@ -13,17 +13,13 @@ data X (n :: Nat)
 
 
 -- === Config === --
-data Config (full_context :: [Type]) (search_context :: [Type]) (free_variable :: Type)
+data Config (context :: [Type]) (tabu :: [Type]) (free_variable :: Type)
 
-type family SubstituteAll ps x t where
-    SubstituteAll '[] _ _ = '[]
-    SubstituteAll (p ': ps) x t = Substitute p x t ': SubstituteAll ps x t
+type family GetContext config where
+    GetContext (Config context _ _) = context
 
-type family GetFullContext config where
-    GetFullContext (Config full_context _ _) = full_context
-
-type family GetSearchContext config where
-    GetSearchContext (Config _ search_context _) = search_context
+type family GetTabu config where
+    GetTabu (Config _ tabu _) = tabu
 
 type family GetFV config where
     GetFV (Config _ _ free_variable) = free_variable
@@ -32,16 +28,16 @@ type family GetNextFV config where
     GetNextFV (Config _ _ (X n)) = X (S n)
 
 type family IncrementFV config where
-    IncrementFV (Config full_context search_context (X n)) =
-        Config full_context search_context (X (S n))
+    IncrementFV (Config context tabu (X n)) =
+        Config context tabu (X (S n))
 
 type family Assume a config where
-    Assume a (Config full_context search_context free_variable) =
-        Config (a ': full_context) (If (Member a search_context) True a ': search_context) free_variable
+    Assume a (Config context tabu free_variable) =
+        Config (a ': context) tabu free_variable
 
 type family Unassume a config where
-    Unassume a (Config full_context search_context free_variable) =
-        Config full_context (SubstituteAll search_context a True) free_variable
+    Unassume a (Config context tabu free_variable) =
+        Config context (a ': tabu) free_variable
 
 
 -- === Apply === --
