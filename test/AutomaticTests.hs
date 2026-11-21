@@ -97,7 +97,7 @@ _ = prove @(Forall X Var (Exists Y Var ((X :=: X) `And` (Y :=: Y))))
 _ = prove @(Exists X Var (X :=: X) -> Exists X Var (X :=: X))
 
 _ = prove @(Forall X Var (Forall Y Var (Exists Z Var ((X :=: Z) `And` (Y :=: Z)) -> (X :=: Y))))
--- _ = prove @(Forall X Var (Exists Y Var (Forall Z Var ((X :=: Y) `And` (Y :=: Z)))) -> Forall X Var (Forall Y Var (X :=: Y)))
+_ = prove @(Forall X Var (Exists Y Var (Forall Z Var ((X :=: Y) `And` (Y :=: Z)))) -> Forall X Var (Forall Y Var (X :=: Y)))
 
 
 -- -- === First-Order Logic: Predicate-Free Theorems === --

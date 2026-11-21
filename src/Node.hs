@@ -26,23 +26,23 @@ data Node where
     IntroOrRight :: Node -> Node
 
     ElimFalse :: Node -> Node
-    ElimImpl :: a -> Node -> Node -> Node
-    ElimAndLeft :: a -> Node -> Node
-    ElimAndRight :: a -> Node -> Node
-    ElimOr :: a -> Node -> Node -> Node -> Node
+    ElimImpl :: Type -> Node -> Node -> Node
+    ElimAndLeft :: Type -> Node -> Node
+    ElimAndRight :: Type -> Node -> Node
+    ElimOr :: Type -> Node -> Node -> Node -> Node
 
     Reflexivity :: Node
     Symmetry :: Node -> Node
-    ElimEq :: a -> Node -> Node -> Node
+    ElimEq :: Type -> Node -> Node -> Node
 
     IntroPredicate :: Node -> Node
     IntroForall :: Node -> Node
-    IntroExists :: a -> Node -> Node
+    IntroExists :: Type -> Node -> Node
 
-    ElimPredicate :: a -> Node -> Node
-    ElimPredicateContext :: a -> Node -> Node -> Node
+    ElimPredicate :: Type -> Node -> Node
+    ElimPredicateContext :: Type -> Node -> Node -> Node
     ElimForall :: Node -> Node
-    ElimExists :: a -> Node -> Node -> Node
+    ElimExists :: Type -> Node -> Node -> Node
 
 
 -- === Inferable === --
@@ -61,10 +61,6 @@ instance
     infer = infer @(Project n) @env @context @conclusion . hTail
 
 
--- instance {-# OVERLAPPABLE #-}
---     Inferable Project env (Predicate p x t ': context) (Predicate p x s) where
-
-
 -- === Intro === --
 instance Inferable IntroTrue env context True where
     infer _ = ()
@@ -74,7 +70,7 @@ instance
     ) => Inferable (IntroImpl node) env context (a -> b) where
     infer ctxt = \x -> infer @node @env @(a ': context) @b (HCons x ctxt)
 
-instance 
+instance
     ( Inferable node_left env context a
     , Inferable node_right env context b
     ) => Inferable (IntroAnd node_left node_right) env context (a `And` b) where
@@ -162,7 +158,7 @@ instance
     ) => Inferable (IntroExists type_witness node) env context (Exists x a p) where
     infer ctxt = Exists $ infer @node @env @context @(Predicate p x (a t)) ctxt
 
-instance
+instance {-# OVERLAPPABLE #-}
     ( Predicate p x t ~ Apply type_pred env
     , Substitute p x t ~ pt
     , Inferable node env context (Predicate p x t)
@@ -170,13 +166,15 @@ instance
     infer ctxt = case infer @node @env @context @(Predicate p x t) ctxt of
         (Predicate p) -> p
 
-instance
-    ( Predicate p x t ~ Apply type_pred env
-    , Inferable node_pred env context (Predicate p x t)
-    , Inferable node_pt (Map x t env) (Substitute p x t ': context) pt
-    ) => Inferable (ElimPredicateContext type_pred node_pred node_pt) env context pt where
-    infer ctxt = case infer @node_pred @env @context @(Predicate p x t) ctxt of
-        (Predicate p) -> infer @node_pt @(Map x t env) @(Substitute p x t ': context) @pt (HCons p ctxt)
+instance {-# OVERLAPPING #-}
+    ( Inferable (ElimPredicate type_pred node) (Map x t env) (Substitute p x t ': context) pt
+    ) => Inferable (ElimPredicate type_pred node) env (Predicate p x t ': context) pt where
+    infer (HCons (Predicate p) ctxt) = infer @(ElimPredicate type_pred node) @(Map x t env) @(Substitute p x t ': context) @pt (HCons p ctxt)
+
+instance {-# OVERLAPPABLE #-}
+    ( Inferable node (Map x t env) (Substitute p x t ': context) pt
+    ) => Inferable node env (Predicate p x t ': context) pt where
+    infer (HCons (Predicate p) ctxt) = infer @node @(Map x t env) @(Substitute p x t ': context) @pt (HCons p ctxt)
 
 instance
     ( Inferable node env context (Forall x a p)

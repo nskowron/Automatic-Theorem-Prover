@@ -33,6 +33,8 @@ library test
     AutomaticTests
   default-extensions:
     DataKinds
+  ghc-options:
+    -freduction-depth=40000
   build-depends:
     base,
     prover

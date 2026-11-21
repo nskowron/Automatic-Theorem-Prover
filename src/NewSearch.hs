@@ -188,7 +188,7 @@ type family TryElimPremise (full_premise :: Type) (goal :: Type) config (subgoal
 
     -- Elim Exists --
     TryElimPremise (Exists x a p) goal config '[] =
-        TryElimPremise (Exists p a x) goal (Unassume (Exists x a p) config) '[TryInfer Find (Exists x a p) config Nothing]
+        TryElimPremise (Exists x a p) goal (Unassume (Exists x a p) config) '[TryInfer Find (Exists x a p) (Unassume (Exists x a p) config) Nothing]
 
     TryElimPremise (Exists x a p) goal config '[Just node_exists] =
         TryElimPremise (Exists x a p) goal config '[Just node_exists, TryInfer Search goal (Assume (Substitute p x (GetNextFV config)) (IncrementFV config)) Nothing]
@@ -222,7 +222,7 @@ type family TryElimEq (premise :: Type) (goal :: Type) config (subgoals :: [Mayb
 
 type family TryElimForall (candidate :: Type) (premise :: Type) (goal :: Type) config match (subgoals :: [Maybe Node]) where
 
-    TryElimForall _ _ _ _ _ '[Nothing] = Nothing
+    TryElimForall _ _ _ _ _ '[Nothing, Nothing] = Nothing
 
     TryElimForall _ _ _ _ _ '[_, Just node] = Just node
 
@@ -232,7 +232,7 @@ type family TryElimForall (candidate :: Type) (premise :: Type) (goal :: Type) c
     TryElimForall (X n) (Forall x a p) goal config False '[Just node] =
         TryElimForall (X n) (Forall x a p) goal config False '[Just node, TryElim '[Substitute p x (X n)] goal config Nothing]
 
-    TryElimForall (X Z) (Forall x a p) goal config False '[Just node, Nothing] = Nothing
+    TryElimForall (X Z) (Forall x a p) goal config False '[_, Nothing] = Nothing
 
     TryElimForall (X (S n)) (Forall x a p) goal config False '[Just node, Nothing] =
         TryElimForall (X n) (Forall x a p) goal config (Equal goal (Substitute p x (X n))) '[Just node]
