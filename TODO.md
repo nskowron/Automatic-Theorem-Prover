@@ -8,10 +8,8 @@
 - [x] Printing the Proof
   - [x] Think about changing Insert to :
 
-- [ ] Extend the Provable Theory
-  - [x] FOL
-  - [ ] ACFp (optional)
-    - [ ] add prime checking
+- [x] Extend the Provable Theory
+  - [x] weird FOL
 
 - [ ] Using and Comparing Heuristics
 
@@ -23,8 +21,8 @@
 
 - [ ] Organize source files
 
-- [ ] Speed up (fix eagerness)
-  - [ ] Replace :<|>:, :<$>:, :<*>: with type families with pattern matching
+- [x] Speed up (fix eagerness)
+  - [x] Replace :<|>:, :<$>:, :<*>: with type families with pattern matching
 
 - [ ] The awkward display/emit
   - [ ] ShowNode with the '()

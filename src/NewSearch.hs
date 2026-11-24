@@ -76,8 +76,8 @@ type family TryIntro (goal :: Type) config (subgoals :: [Maybe Node]) where
         Just (IntroForall (IntroPredicate node))
 
     -- Intro Exists --
-    TryIntro (Exists x a p) config '[] =
-        TryIntroExists (GetNextFV config) (Exists x a p) config Nothing
+    -- TryIntro (Exists x a p) config '[] =
+    --     TryIntroExists (GetNextFV config) (Exists x a p) config Nothing
 
     -- Fallback --
     TryIntro _ _ _ = Nothing
@@ -183,8 +183,8 @@ type family TryElimPremise (full_premise :: Type) (goal :: Type) config (subgoal
         TryElimPred (Predicate p x t) goal config (Equal goal (Substitute p x t)) '[]
 
     -- Elim Forall --
-    TryElimPremise (Forall x a p) goal config '[] =
-        TryElimForall (GetNextFV config) (Forall x a p) goal config False '[TryInfer Find (Forall x a p) config Nothing, Nothing]
+    -- TryElimPremise (Forall x a p) goal config '[] =
+    --     TryElimForall (GetNextFV config) (Forall x a p) goal config False '[TryInfer Find (Forall x a p) config Nothing, Nothing]
 
     -- Elim Exists --
     TryElimPremise (Exists x a p) goal config '[] =
